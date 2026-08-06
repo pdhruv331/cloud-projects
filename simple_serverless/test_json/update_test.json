@@ -1,0 +1,9 @@
+{
+  "operation": "update",
+  "tableName": "lambda-apigateway",
+  "payload": {
+    "Key": { "id": "1" },
+    "UpdateExpression": "SET job = :j",
+    "ExpressionAttributeValues": { ":j": "Solutions Architect" }
+  }
+}

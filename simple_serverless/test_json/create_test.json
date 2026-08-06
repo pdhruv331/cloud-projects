@@ -1,0 +1,12 @@
+{
+  "operation": "create",
+  "tableName": "lambda-apigateway",
+  "payload": {
+    "Item": {
+      "id": "1",
+      "name": "Dhruv",
+      "state": "NY",
+      "job": "Aspiring Cloud Engineer"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "operation": "delete",
+  "tableName": "lambda-apigateway",
+  "payload": {
+    "Key": { "id": "1" }
+  }
+}
