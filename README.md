@@ -8,6 +8,7 @@ A collection of hands-on AWS cloud projects I've built to learn and demonstrate 
 | Project | Description | AWS Services |
 |---|---|---|
 | [Resume Hosted on S3 + CloudFront](./resumefromstaticwebsite) | A static HTML/CSS resume hosted on S3 and served securely over HTTPS via a CloudFront distribution. | S3, CloudFront |
+| [Serverless CRUD API](./simple_serverless) | A REST API built with API Gateway and Lambda for create/read/update/delete/list operations on a DynamoDB table, tested with Postman. | API Gateway, Lambda, DynamoDB, IAM |
  
 More projects will be added here as I continue building out this repo.
  
