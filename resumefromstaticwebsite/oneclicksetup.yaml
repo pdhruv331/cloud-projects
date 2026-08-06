@@ -1,0 +1,114 @@
+# CloudFormation template version declaration — always use this value, it's the only valid version
+AWSTemplateFormatVersion: "2010-09-09"
+
+# Parameters allow you to pass in values at deploy time instead of hardcoding them
+Parameters:
+
+  # The domain name used as the S3 bucket name (e.g. myresume.com)
+  websitedomain:
+    Type: String
+    Description: Enter the domain name for your resume website.
+
+  # The main HTML file CloudFront and S3 will serve as the homepage
+  sourcefile:
+    Type: String
+    Description: Enter the name of your resume html file.
+    Default: index.html
+
+  # The CSS file for styling — not directly used in this template but captured for reference
+  stylesheet:
+    Type: String
+    Description: Enter the name of your css file.
+    Default: style.css
+
+Resources:
+
+  # S3 bucket that stores the static website files (HTML, CSS, images, etc.)
+  # WebsiteConfiguration enables static website hosting on the bucket
+  # PublicAccessBlock is disabled here to allow CloudFront to serve content via the bucket policy
+  BucketForWebsite:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref websitedomain
+      WebsiteConfiguration:
+        IndexDocument: !Ref sourcefile
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  # Bucket policy that grants CloudFront permission to read objects from S3
+  # The Condition locks access to only your specific CloudFront distribution,
+  # so no one can bypass CloudFront and hit S3 directly
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketForWebsite
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontAccess
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${BucketForWebsite}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+  # Origin Access Control (OAC) is the modern way to securely connect CloudFront to S3
+  # It signs requests using SigV4 so S3 knows they came from your CloudFront distribution
+  # This replaces the older Origin Access Identity (OAI) approach
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-OAC"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # CloudFront distribution that sits in front of S3 and serves the website globally
+  # - redirect-to-https enforces HTTPS for all visitors
+  # - CachingOptimized policy caches content at edge locations for fast load times
+  # - PriceClass_100 limits edge locations to US, Canada, and Europe to reduce costs
+  # - http2 enables HTTP/2 for better performance
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: !Ref sourcefile
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt BucketForWebsite.RegionalDomainName
+            OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS managed CachingOptimized policy
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+
+# Outputs display useful values in the CloudFormation console after the stack deploys
+Outputs:
+
+  # The primary HTTPS URL served through CloudFront — use this to access your website
+  WebsiteURL:
+    Description: "CloudFront URL for website:"
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+
+  # The direct S3 static website URL — bypasses CloudFront, useful for debugging
+  S3WebsiteURL:
+    Description: "S3 static website URL:"
+    Value: !Sub "http://${BucketForWebsite}.s3-website.${AWS::Region}.amazonaws.com"
