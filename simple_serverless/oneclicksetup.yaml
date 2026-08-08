@@ -1,0 +1,173 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  TableName:
+    Type: String
+    Description: Name of the dynamoDB table to create
+  LambdaFunctionName:
+    Type: String
+    Description: Name of the lambda function
+
+Resources:
+
+  # DynamoDB table with id (String) as partition key, billed per request
+  LambdaApiGatewayTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S  # S=String, N=Number, B=Binary
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH  # HASH=partition key, RANGE=sort key
+      BillingMode: PAY_PER_REQUEST
+
+  # IAM role that Lambda assumes - grants CloudWatch Logs and DynamoDB CRUD access
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${LambdaFunctionName}Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${LambdaFunctionName}Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Write logs to CloudWatch
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              # CRUD access scoped to the table above
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                Resource: !GetAtt LambdaApiGatewayTable.Arn
+
+  # Lambda function with inline code - ZipFile always saves as index.py so Handler is index.lambda_handler
+  LambdaOverHTTP:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Runtime: python3.13
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          from __future__ import print_function
+          import boto3
+          import json
+
+          print('Loading function')
+
+
+          def lambda_handler(event, context):
+              '''Provide an event that contains the following keys:
+
+                - operation: one of the operations in the operations dict below
+                - tableName: required for operations that interact with DynamoDB
+                - payload: a parameter to pass to the operation being performed
+              '''
+              #print("Received event: " + json.dumps(event, indent=2))
+
+              operation = event['operation']
+
+              if 'tableName' in event:
+                  dynamo = boto3.resource('dynamodb').Table(event['tableName'])
+
+              operations = {
+                  'create': lambda x: dynamo.put_item(**x),
+                  'read': lambda x: dynamo.get_item(**x),
+                  'update': lambda x: dynamo.update_item(**x),
+                  'delete': lambda x: dynamo.delete_item(**x),
+                  'list': lambda x: dynamo.scan(**x),
+                  'echo': lambda x: x,
+                  'ping': lambda x: 'pong'
+              }
+
+              if operation in operations:
+                  return operations[operation](event.get('payload'))
+              else:
+                  raise ValueError('Unrecognized operation "{}"'.format(operation))
+
+  # REST API container - REGIONAL means deployed in current region only (not via CloudFront)
+  MyApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub ${LambdaFunctionName}-api
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # /dynamo resource path hanging off the API root
+  MyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MyApi
+      ParentId: !GetAtt MyApi.RootResourceId
+      PathPart: dynamo
+
+  # POST method on /dynamo - uses AWS (non-proxy) integration so Lambda receives the body directly
+  MyPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref MyApi
+      ResourceId: !Ref MyResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS  # Non-proxy: body passed directly to Lambda event, no json.loads needed
+        IntegrationHttpMethod: POST
+        # 2015-03-31 is the fixed Lambda API version in the URI - it never changes
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt LambdaOverHTTP.Arn
+        RequestTemplates:
+          application/json: "$input.json('$')"  # Pass request body as-is to Lambda
+        # Map Lambda responses to HTTP status codes via error message pattern matching
+        IntegrationResponses:
+          - StatusCode: 200
+          - StatusCode: 400
+            SelectionPattern: ".*Bad Request.*"
+          - StatusCode: 500
+            SelectionPattern: ".*Internal Error.*"
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 500
+
+  # Deploys the API to the prod stage - makes it publicly accessible
+  MyDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: MyPostMethod
+    Properties:
+      RestApiId: !Ref MyApi
+      StageName: prod
+
+  # Grants API Gateway permission to invoke Lambda - without this API Gateway gets a 403
+  LambdaApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaOverHTTP.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/POST/dynamo
+
+# Final endpoint URL shown in CloudFormation console after deployment
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/dynamo
