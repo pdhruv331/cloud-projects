@@ -42,6 +42,10 @@ Client (Postman / any HTTP client)
 4. **Created an API Gateway REST API** with a `/DynamoDBManager` resource and a `POST` method integrated with the Lambda function, then deployed it to a `Prod` stage to get a public HTTPS endpoint.
 5. **Tested the API using Postman**, sending POST requests with different `operation` values to the API Gateway endpoint and confirming DynamoDB was updated correctly by cross-checking the table in the AWS console.
 
+## Infrastructure as Code
+
+This project also includes a CloudFormation template, [`oneclicksetup.yaml`](./oneclicksetup.yaml), that automates the full setup above. It takes a table name and Lambda function name as input parameters and provisions the DynamoDB table, the Lambda execution role and function (with the handler code inlined in the template), and the API Gateway REST API, resource, method, and deployment, all in one stack. Once the stack finishes creating, the API endpoint is ready to call immediately and is printed as a stack output.
+
 ## Screenshots
 
 **Lambda function overview, showing the API Gateway trigger wired to the function:**
@@ -80,6 +84,7 @@ Client (Postman / any HTTP client)
 | `lambda_function.py` | Lambda handler that routes operations to DynamoDB actions |
 | `lambda_policy.json` | IAM policy granting the Lambda role DynamoDB + CloudWatch Logs permissions |
 | `test_json/` | Sample test events for each operation (create, read, update, delete, list, echo, ping) |
+| `oneclicksetup.yaml` | CloudFormation template that provisions the DynamoDB table, Lambda function, IAM role, and API Gateway API |
 | `screenshots/` | Console and Postman screenshots showing the API Gateway/Lambda setup and each operation running successfully |
 
 ## Tech / Services Used
