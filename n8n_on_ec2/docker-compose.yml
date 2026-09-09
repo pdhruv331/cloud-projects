@@ -1,0 +1,34 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=n8n.builtbydhruv.com
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://n8n.builtbydhruv.com/
+      - N8N_SECURE_COOKIE=true
+      - N8N_RUNNERS_ENABLED=true
+      - GENERIC_TIMEZONE=America/New_York
+      - TZ=America/New_York
+      - NODE_FUNCTION_ALLOW_EXTERNAL=cheerio
+    volumes:
+      - n8n_data:/home/node/.n8n
+    expose:
+      - "5678"          # reachable only on the compose network, never published to the host
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"         # ACME HTTP-01 challenge + redirect to HTTPS
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  n8n_data:
+  caddy_data:
+  caddy_config:
