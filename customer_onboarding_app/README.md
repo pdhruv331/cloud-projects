@@ -6,7 +6,7 @@ A capstone project where I take on the role of a cloud application developer at 
 
 | Part | Description | Status |
 |---|---|---|
-| Customer Onboarding App | Design and deploy the document/identity verification pipeline shown below | Not started |
+| Customer Onboarding App | Design and deploy the document/identity verification pipeline shown below | In progress |
 
 ## Overview
 
@@ -30,11 +30,44 @@ The app lets a customer submit application data, a selfie, and a driver's licens
 
 ## What I Did
 
-_TODO_
+- Created the S3 document bucket, `customer-application-data-5911`, to receive customer app data, selfies, and license photo uploads
+- Added a bucket policy denying access to the bucket and its objects over plain HTTP, requiring HTTPS (`aws:SecureTransport`)
+- Created the Lambda execution role `customer-onboarding-lambda-role`, with a trust policy allowing `sts:AssumeRole` (for the Lambda service)
+- Created the permissions policy `document_lambda_policy`, granting the Document Lambda `s3:GetObject` and `s3:PutObject` on the application bucket, `dynamodb:PutItem` and `dynamodb:UpdateItem` on the DynamoDB table, and `sns:Publish` on the SNS topic
+- Added a bucket policy statement denying `s3:GetObject` to everyone except the Lambda role using `ArnNotEquals`
+- Created the `CustomerMetadataTable` DynamoDB table with `APP_UUID` as the partition key, provisioned with 2 RCUs and 2 WCUs, with auto scaling configured to scale between 2 and 20 at 70% utilization
+- Created the `ApplicationNotifications` SNS topic encrypted with the default `alias/aws/sns` KMS key, with an email subscription
+- Wrote `DocumentLambda.py` — triggered by S3 `ObjectCreated:Put` on the `zipped/` prefix; downloads and extracts the zip to `/tmp`, uploads extracted files to the `unzipped/` prefix, parses the customer details CSV, and writes the record to DynamoDB
 
 ## Infrastructure as Code
 
-_TODO_
+Migrated the document-ingestion half of the pipeline (steps 1-5 in the architecture diagram) to AWS SAM (`template.yaml`); the license-verification half (SQS, License Lambda, Textract, API Gateway) is still manual/not started. Covers:
+
+- **S3 bucket** (`CustomerApplicationBucket`) with HTTP deny bucket policy
+- **DynamoDB table** (`CustomerMetadataTable`) with provisioned capacity and Application Auto Scaling for read and write capacity (target 70%, min 2, max 20)
+- **SNS topic** (`ApplicationNotifications`) with KMS encryption and email subscription
+- **IAM role** (`DocumentLambdaRole`) with inline policies for CloudWatch Logs, S3, DynamoDB, and SNS — scoped to least privilege with no AWS managed policies
+- **Lambda function** (`DocumentLambdaFunction`) using Python 3.13 runtime, 20s timeout, S3 event trigger on `zipped/` prefix, and `DYNAMODB_TABLE_NAME` environment variable
+- **Lambda invoke permission** allowing S3 to invoke the Lambda (implicit, created by SAM from the `Events` declaration)
+
+### Project Structure
+
+```
+customer_onboarding_app/
+├── template.yaml               # SAM template
+├── samconfig.toml              # SAM deployment config
+├── document_lambda/
+│   ├── DocumentLambdaSam.py    # Lambda function code
+│   └── requirements.txt
+└── images/
+    └── architecture-diagram.png
+```
+
+### Deploy
+
+```bash
+sam build && sam deploy
+```
 
 ## Screenshots
 

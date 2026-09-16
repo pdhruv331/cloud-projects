@@ -1,0 +1,157 @@
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  CustomerApplicationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: customer-application-bucket-5911sam
+
+  CustomerApplicationBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CustomerApplicationBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyHTTPAccess
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt CustomerApplicationBucket.Arn
+              - !Sub "${CustomerApplicationBucket.Arn}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+
+  CustomerMetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CustomerMetadataTableSam
+      AttributeDefinitions:
+        - AttributeName: APP_UUID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: APP_UUID
+          KeyType: HASH
+      TableClass: STANDARD
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  CustomerMetadataTableReadScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 2
+      MaxCapacity: 20
+      ResourceId: !Sub "table/${CustomerMetadataTable}"
+      ScalableDimension: dynamodb:table:ReadCapacityUnits
+      ServiceNamespace: dynamodb
+
+  CustomerMetadataTableReadScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ReadAutoScalingPolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref CustomerMetadataTableReadScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBReadCapacityUtilization
+
+  CustomerMetadataTableWriteScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 2
+      MaxCapacity: 20
+      ResourceId: !Sub "table/${CustomerMetadataTable}"
+      ScalableDimension: dynamodb:table:WriteCapacityUnits
+      ServiceNamespace: dynamodb
+
+  CustomerMetadataTableWriteScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: WriteAutoScalingPolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref CustomerMetadataTableWriteScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 70.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBWriteCapacityUtilization
+
+  ApplicationNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ApplicationNotificationsSam
+      KmsMasterKeyId: alias/aws/sns
+      Subscription:
+        - Protocol: email
+          Endpoint: pdhruv331@gmail.com
+
+  DocumentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: customer-onboarding-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DocumentLambdaCloudWatchPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/DocumentLambdaSam:*"
+        - PolicyName: DocumentLambdaS3PermissionPolicySam
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: DocumentLambdaS3PermissionPolicy
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
+              - Sid: DocumentLambdaDynamoDBPermissionPolicy
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt CustomerMetadataTable.Arn
+              - Sid: DocumentLambdaSNSPermissionPolicy
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !GetAtt ApplicationNotification.TopicArn
+
+  DocumentLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: DocumentLambdaSam
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref CustomerMetadataTable
+      CodeUri: document_lambda/
+      Handler: DocumentLambdaSam.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt DocumentLambdaRole.Arn
+      Timeout: 20
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref CustomerApplicationBucket # This is the bucket resource name in the template
+            Events: s3:ObjectCreated:Put
+            Filter:
+              S3Key:
+                Rules:
+                - Name: prefix
+                  Value: zipped/ 
