@@ -131,6 +131,50 @@ Resources:
                 Effect: Allow
                 Action: sns:Publish
                 Resource: !GetAtt ApplicationNotification.TopicArn
+        - PolicyName: DocumentLambdaRekognitionPolicy
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Sid: RekognitionCompareFacePolicy
+                Effect: Allow
+                Action:
+                  - rekognition:CompareFaces
+                Resource: "*"
+        - PolicyName: DocumentLambdaTextractPolicy
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Sid: TextractIDPolicy
+                Effect: Allow
+                Action:
+                  - textract:AnalyzeID
+                Resource: "*"
+
+
+  ValidateLicenseLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: license-validation-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ValidateLicenseLambdaCloudWatchPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ValidateLicenseLambdaFunction:*"
 
   DocumentLambdaFunction:
     Type: AWS::Serverless::Function
@@ -139,6 +183,7 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref CustomerMetadataTable
+          TOPIC: !Ref ApplicationNotification
       CodeUri: document_lambda/
       Handler: DocumentLambdaSam.lambda_handler
       Runtime: python3.13
@@ -155,3 +200,26 @@ Resources:
                 Rules:
                 - Name: prefix
                   Value: zipped/ 
+
+  ValidateLicenseLambdaFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: ValidateLicenseLambdaFunction
+      CodeUri: validation_lambda/
+      Handler: ValidateLicenseLambdaFunction.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt ValidateLicenseLambdaRole.Arn
+      Events:
+        ValidateLicenseApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ValidateLicenseApi
+            Path: /license
+            Method: post
+  
+  ValidateLicenseApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: ValidateLicenseApi
+      StageName: $default
+      

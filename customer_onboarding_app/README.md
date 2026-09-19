@@ -50,13 +50,14 @@ The app lets a customer submit application data, a selfie, and a driver's licens
 
 ## Infrastructure as Code
 
-Migrated the document-ingestion half of the pipeline (steps 1-5 in the architecture diagram) to AWS SAM (`template.yaml`); the license-verification half (SQS, License Lambda, Textract, API Gateway) is still manual/not started. Covers:
+Migrated the pipeline to AWS SAM (`template.yaml`): document ingestion, identity verification (Rekognition and Textract), and the mock third-party license-validation API. The SQS queue and License Submit Lambda are not built yet (see Next Steps below). Covers:
 
 - **S3 bucket** (`CustomerApplicationBucket`) with HTTP deny bucket policy
 - **DynamoDB table** (`CustomerMetadataTable`) with provisioned capacity and Application Auto Scaling for read and write capacity (target 70%, min 2, max 20)
 - **SNS topic** (`ApplicationNotifications`) with KMS encryption and email subscription
-- **IAM role** (`DocumentLambdaRole`) with inline policies for CloudWatch Logs, S3, DynamoDB, and SNS — scoped to least privilege with no AWS managed policies
-- **Lambda function** (`DocumentLambdaFunction`) using Python 3.13 runtime, 20s timeout, S3 event trigger on `zipped/` prefix, and `DYNAMODB_TABLE_NAME` environment variable
+- **IAM role** (`DocumentLambdaRole`) with inline policies for CloudWatch Logs, S3, DynamoDB, SNS, Rekognition (`CompareFaces`), and Textract (`AnalyzeID`) — no AWS managed policies
+- **Lambda function** (`DocumentLambdaFunction`) using Python 3.13 runtime, 20s timeout, S3 event trigger on `zipped/` prefix, and `DYNAMODB_TABLE_NAME` and `TOPIC` environment variables. After saving the customer record, it compares the selfie to the license photo with Rekognition, extracts the license fields with Textract, checks them against the submitted details, records both results in DynamoDB, and publishes an SNS alert on any mismatch
+- **Validate License Lambda + HTTP API** (`ValidateLicenseLambdaFunction`, `ValidateLicenseApi`) — a mock third-party license-validation service behind an API Gateway `POST /license` route, with its own least-privilege role
 - **Lambda invoke permission** allowing S3 to invoke the Lambda (implicit, created by SAM from the `Events` declaration)
 
 ### Project Structure
@@ -68,6 +69,8 @@ customer_onboarding_app/
 ├── document_lambda/
 │   ├── DocumentLambdaSam.py    # Lambda function code
 │   └── requirements.txt
+├── validation_lambda/
+│   └── ValidateLicenseLambdaFunction.py  # Mock license-validation function
 └── images/
     └── architecture-diagram.png
 ```
