@@ -1,16 +1,25 @@
 # Customer Onboarding App
 
-A capstone project where I take on the role of a cloud application developer at "AnyCompany Bank," building a customer onboarding application on AWS. During onboarding, the bank exchanges sensitive documentation with customers (ID, selfie, application data) to meet regulatory requirements before offering products and services — this project designs and builds the secure, event-driven backend for that exchange.
+A serverless customer onboarding application on AWS. A new customer submits their application details, a selfie, and a photo of their driver's license; the backend verifies their identity automatically, without a person reviewing the happy path. I designed and built the event-driven backend myself.
 
 ## Progress
 
-| Part | Description | Status |
+| Phase | Description | Status |
 |---|---|---|
-| Customer Onboarding App | Design and deploy the document/identity verification pipeline shown below | In progress |
+| Document ingestion + identity verification | S3 upload → Document Lambda → DynamoDB / SNS, with Rekognition and Textract (built manually, then migrated to SAM) | In progress |
+| License submission via SQS | SQS queue + License Submit Lambda that hands the license to the third-party validation API | Planned |
+| Split into async functions | Break the Document Lambda into four single-purpose Lambda functions | Planned |
+| Step Functions + X-Ray | Orchestrate the functions with a state machine and add distributed tracing | Planned |
 
 ## Overview
 
 The app lets a customer submit application data, a selfie, and a driver's license photo through a client (web or mobile). The backend verifies the customer's identity by matching the selfie against the license photo and extracting/validating the license details, then records the outcome — all without a human in the loop for the happy path.
+
+## Use Cases
+
+- **Digital account opening (KYC):** verify a new customer's identity remotely before opening a bank or fintech account
+- **Loan and insurance applications:** confirm an applicant is who they claim to be and capture their details in one submission
+- **Any regulated onboarding:** the same document-and-selfie pipeline fits rentals, marketplaces, or gig platforms that need to verify identity before granting access
 
 ## Architecture
 
@@ -69,9 +78,95 @@ customer_onboarding_app/
 sam build && sam deploy
 ```
 
+## Next Steps (Planned)
+
+The remaining work moves the app from one large Lambda function to a set of small, event-driven microservices, then adds orchestration and observability. Nothing in this section is built yet; it will be updated with details and screenshots as each part is completed.
+
+### From one large function to microservices
+
+**Before:** a single Document Lambda does everything: unzips the upload, parses the customer details, writes to DynamoDB, calls Rekognition and Textract, and hands off to SQS. It needs one broad IAM role, one timeout covers all the work, and a failure at any point affects the whole pipeline.
+
+**After:** four single-purpose functions, each with its own narrowly scoped IAM role, timeout, and retry behavior, coordinated by a Step Functions state machine. X-Ray traces show where time is spent and where errors occur across the whole workflow.
+
+```mermaid
+flowchart LR
+    subgraph Before
+        direction TB
+        A[Document Lambda<br/>unzip + parse + DynamoDB +<br/>Rekognition + Textract + SQS]
+    end
+    subgraph After
+        direction TB
+        B[Step Functions] --> C[Unzip]
+        B --> D[Write to DynamoDB]
+        B --> E[Compare Faces]
+        B --> F[Compare Details]
+    end
+    Before --> After
+```
+
+**Trade-off:** more moving parts to deploy, permission, and monitor. That is why Step Functions (to keep the workflow in one place) and X-Ray (to see across the functions) are part of this design rather than an afterthought.
+
+### License submission via SQS
+
+- Create an SQS queue that holds licenses waiting for third-party validation, so license checks are decoupled from document processing (with a dead-letter queue for messages that repeatedly fail)
+- Create the **License Submit Lambda** with the SQS queue as its event source and its own least-privilege execution role
+- Write its code to read each queued message and call the third-party validation API (API Gateway → Validate License Lambda), then record the result in DynamoDB
+- Update the Document Lambda to send the extracted license data to the queue instead of handling validation itself
+
+### Refactor into async, single-purpose functions
+
+Break the Document Lambda into four smaller functions that can run asynchronously:
+
+| Function | Responsibility |
+|---|---|
+| **Unzip** | Download the uploaded zip from S3, extract it, and write the files to the `unzipped/` prefix |
+| **Write to DynamoDB** | Parse the customer details and store the application record |
+| **Compare Faces** | Use Rekognition to match the selfie against the license photo |
+| **Compare Details** | Use Textract to extract the license fields and compare them to the application data |
+
+Why: each function gets its own IAM role, timeout, retries, and scaling, and a failure is isolated to one step instead of the whole pipeline.
+
+### Orchestrate with AWS Step Functions
+
+- Build a **Step Functions state machine** that runs the four functions in order, passes each step's output to the next, and handles failures with retries and catch paths
+- Replace the current Lambda-to-Lambda hand-offs with the state machine as the single place that defines the workflow
+- Define the state machine in `template.yaml` (`AWS::Serverless::StateMachine`) so the workflow is deployed as code alongside everything else
+
+```mermaid
+flowchart LR
+    S3[S3 upload] --> SM{{Step Functions state machine}}
+    SM --> U[Unzip]
+    U --> W[Write to DynamoDB]
+    W --> F[Compare Faces]
+    F --> D[Compare Details]
+    D --> Q[SQS queue]
+    Q --> L[License Submit Lambda]
+    L --> API[API Gateway → Validate License]
+```
+
+The exact ordering (and whether any steps can run in parallel) will be finalized while building it.
+
+### Observability with AWS X-Ray
+
+- Enable X-Ray **active tracing** on the state machine to see each execution and how long every state takes
+- Enable X-Ray tracing on the Lambda functions, and grant their execution roles permission to send trace data (custom roles do not get this automatically)
+- Use the **service map** and individual traces to find slow steps and trace errors across Step Functions, Lambda, and downstream AWS services
+- Keep using CloudWatch Logs alongside traces for function-level detail
+
+### Infrastructure as Code follow-ups
+
+- Extend `template.yaml` with the SQS queue and dead-letter queue, the new Lambda functions and roles, the state machine, and tracing settings
+- Update the project structure below as new function folders are added
+- Fill in the Screenshots, Files in This Directory, and Why This Project sections once the build is complete
+
 ## Screenshots
 
-_TODO_
+_TODO — planned screenshots to add:_
+
+- [ ] SQS queue and License Submit Lambda configuration
+- [ ] The four Lambda functions after the refactor
+- [ ] Step Functions state machine graph and a successful execution
+- [ ] X-Ray service map and an example trace
 
 ## Files in This Directory
 
@@ -88,6 +183,10 @@ _TODO_
 - **Amazon Textract** — text extraction from license images
 - **Amazon API Gateway** — entry point to the third-party license validation service
 - **AWS IAM** — least-privilege role for the Document Lambda function
+- **AWS SAM** — infrastructure as code for the stack
+- **AWS Step Functions** _(planned)_ — orchestrates the split-out Lambda functions as a single workflow
+- **AWS X-Ray** _(planned)_ — distributed tracing across the state machine and Lambda functions
+- **Amazon CloudWatch** — function logs, used alongside X-Ray traces
 
 ## Why This Project
 
