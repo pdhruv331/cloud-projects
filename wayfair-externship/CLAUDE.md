@@ -4,7 +4,9 @@ Full context: @docs/project-brief.md. Read it before any Phase 3+ work.
 
 ## Current state
 - Phases 1–2 are done: workflow `mhvhOPSqwWtvrrm0` ("My workflow"). Reference only, **never edit it**.
-- Phase 3 (Monitor Competitors) is next, as a new separate workflow. Wait for Dhruv's Phase 3 materials before designing the pipeline.
+- Phase 3 is done: workflow `WJQ0sTQIUub8sRlW` ("Phase 3 - Competitor Monitoring Report"), built to match the Wayfair guide's screenshots. Export in `workflows/phase3-competitor-report.json`.
+- Phase 4 (AI Insights & Content Agent) is next. Wait for Dhruv's Phase 4 materials before designing.
+- Dhruv follows the guide's screenshots and pastes the guide's code himself. Build nodes with the guide's exact names so pasted `$('...')` references work, then check his pastes for wrong node/field names.
 
 ## Rules
 - Explain planned workflow changes and get a yes **before** creating, editing, saving, running, or publishing anything in n8n.
