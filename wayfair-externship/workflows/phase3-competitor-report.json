@@ -1,0 +1,1152 @@
+{
+  "name": "Phase 3 - Competitor Monitoring Report",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3daa2dcd-a217-4a7a-813c-285d7d09edfe",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        336
+      ],
+      "webhookId": "0234d475-4a3f-496c-a487-f533d1335a8e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Input: extract the rug category (and optional \"focus:\" line) from chat.\nconst input = $input.first().json.chatInput || '';\n\nconst categories = [\n  { key: 'area_rug', display: 'Area Rug', patterns: ['area rug', 'area rugs'] },\n  { key: 'outdoor_rug', display: 'Outdoor Rug', patterns: ['outdoor rug', 'outdoor rugs', 'patio rug'] },\n  { key: 'hallway_runner', display: 'Hallway Runner', patterns: ['hallway runner', 'runner rug', 'hall runner', 'runners'] },\n  { key: 'shag_rug', display: 'Shag Rug', patterns: ['shag rug', 'shag rugs', 'shaggy rug'] }\n];\n\nconst lowerInput = input.toLowerCase();\nlet match = null;\nfor (const cat of categories) {\n  if (cat.patterns.some(p => lowerInput.includes(p))) { match = cat; break; }\n}\n\nconst focusMatch = input.match(/focus\\s*:\\s*([^\\n]+)/i);\nconst focus = focusMatch ? focusMatch[1].trim() : '';\n\nreturn [{\n  json: {\n    selectedCategory: match ? match.display : null,\n    categoryKey: match ? match.key : null,\n    focus,\n    hasValidInput: !!match,\n    errorReason: match ? null : 'no_category'\n  }\n}];\n"
+      },
+      "id": "e589097a-1a13-48a4-9672-20d81323b17a",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ce891207-91e0-4b35-b56f-ccb834e69c40",
+              "leftValue": "={{ $json.hasValidInput }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8446482c-c406-413b-9677-470d98b6456f",
+      "name": "Valid Category?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error Response: explain in chat why no report was produced.\nconst input = $input.first().json;\nconst reason = input.errorReason || 'unknown';\n\nlet message;\nif (reason === 'no_category') {\n  message = 'I could not detect a rug category. Send one of: Area Rug, Outdoor Rug, Hallway Runner, Shag Rug. Optionally add a second line such as \"focus: washable\".';\n} else if (reason === 'missing_retailer_data') {\n  message = 'No report was generated: the product API returned no usable products for ' + (input.missingRetailers || []).join(', ') +\n    '. A competitor comparison needs Wayfair, Amazon and Walmart data. Try again in a few minutes.';\n} else {\n  message = 'An unknown error occurred. Check the execution log in n8n.';\n}\n\nreturn [{ json: { error: true, reason, output: message } }];\n"
+      },
+      "id": "2a1b5ea0-adb6-497d-8b4e-a463579c8ce1",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://34.196.186.128:8000/api/products/wayfair",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $('Parse Input').first().json.categoryKey }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            },
+            {
+              "name": "focus",
+              "value": "={{ $('Parse Input').first().json.focus || '' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "097739a0-c363-4d9a-a40b-98ccd663605a",
+      "name": "Fetch Wayfair Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        176
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "http://34.196.186.128:8000/api/products/amazon",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $('Parse Input').first().json.categoryKey }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            },
+            {
+              "name": "focus",
+              "value": "={{ $('Parse Input').first().json.focus || '' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "6d9529b7-71cc-4882-9446-934eddae4528",
+      "name": "Fetch Amazon Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        352
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "http://34.196.186.128:8000/api/products/walmart",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $('Parse Input').first().json.categoryKey }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            },
+            {
+              "name": "focus",
+              "value": "={{ $('Parse Input').first().json.focus || '' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "b585ec7c-7383-4290-b254-d084743e3546",
+      "name": "Fetch Walmart Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        560
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "6ff971af-c9ee-4b89-b763-81e2a7f6c742",
+      "name": "Merge Retailer Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1328,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compute Competitor Metrics\n// Normalizes the three retailer responses and computes every number the report uses.\n// The AI agents only interpret these numbers; they never calculate their own.\nconst parsed = $('Parse Input').first().json;\nconst RETAILERS = ['wayfair', 'amazon', 'walmart'];\nconst LABEL = { wayfair: 'Wayfair', amazon: 'Amazon', walmart: 'Walmart' };\nconst PREFIX = { wayfair: 'WF', amazon: 'AZ', walmart: 'WM' };\n\n// ---------- group API responses by source ----------\nconst raw = {};\nconst scrapedAt = {};\nfor (const item of $input.all()) {\n  const r = item.json || {};\n  const src = String(r.source || '').toLowerCase();\n  if (!RETAILERS.includes(src)) continue;\n  raw[src] = (r.products || []).slice(0, 10);\n  scrapedAt[src] = r.scraped_at || null;\n}\n\n// ---------- parsing helpers ----------\nfunction firstNumber(v) {\n  const m = String(v == null ? '' : v).replace(/,/g, '').match(/\\d+(?:\\.\\d+)?/);\n  return m ? parseFloat(m[0]) : null;\n}\n\n// Rug size from the title, e.g. 8x10, 5'x7', 9' x 12', 5ft x 8ft, 5'3\" x 7'6\", 63\"x31.5\"\n// feet, optional inches (\"2'6\", \"2'-3\\\"\", \"5'3\\\"\"), or a bare number\nconst DIM = String.raw`(\\d{1,3}(?:\\.\\d+)?)\\s*(ft\\.?|feet|foot|'|\"|in\\.?|inch(?:es)?)?(?:\\s*-?\\s*(\\d{1,2})\\s*(?:\"|in\\.?)?)?`;\nconst SIZE_RE = new RegExp(String.raw`(?<![\\d.'\"-])` + DIM + String.raw`\\s*[x\u00d7]\\s*` + DIM, 'i');\nfunction toFeet(n, unit, extraIn) {\n  n = parseFloat(n);\n  const u = (unit || '').toLowerCase();\n  if (u.startsWith('f') || u === \"'\") return n + (extraIn ? parseFloat(extraIn) / 12 : 0);\n  return n > 20 ? n / 12 : n; // inches, or a typo like 8\"x10\" that really means feet\n}\nfunction parseSize(text) {\n  const s = String(text || '').replace(/[\u2019\u2032]/g, \"'\").replace(/[\u201d\u2033]/g, '\"');\n  const m = s.match(SIZE_RE);\n  if (!m) return null;\n  const a = toFeet(m[1], m[2], m[3]);\n  const b = toFeet(m[4], m[5], m[6]);\n  if (!(a >= 1.5 && a <= 20 && b >= 1.5 && b <= 20)) return null;\n  const fmt = x => (Math.round(x * 10) / 10).toString();\n  return { label: fmt(a) + ' x ' + fmt(b) + ' ft', sqft: Math.round(a * b * 10) / 10 };\n}\n\nconst FEATURES = {\n  'Washable': /washable/i,\n  'Non-slip backing': /non[\\s-]?slip|anti[\\s-]?slip|no[\\s-]?slip|non[\\s-]?skid/i,\n  'Indoor/outdoor': /outdoor|water[\\s-]?resistant|weather/i,\n  'Shag / high pile': /shag|fluffy|plush|fuzzy|high[\\s-]?pile/i,\n  'Low pile / flatweave': /low[\\s-]?pile|low[\\s-]?profile|flat[\\s-]?weave|thin/i,\n  'Natural fiber': /\\bjute\\b|\\bwool\\b|\\bsisal\\b|\\bcotton\\b|\\bseagrass\\b/i,\n  'Designer collaboration': /\\bx\\s+loloi\\b|\\bloloi\\b/i\n};\nconst STYLES = {\n  'Boho / Moroccan': /boho|moroccan|bohemian/i,\n  'Vintage / traditional': /vintage|distress|traditional|persian|oriental|medallion/i,\n  'Abstract': /abstract/i,\n  'Geometric / checkered': /geometric|checker|plaid|diamond|trellis|stripe/i,\n  'Floral / botanical': /floral|botanical/i,\n  'Modern / contemporary': /modern|contemporary/i,\n  'Coastal': /coastal|nautical/i,\n  'Solid / neutral': /\\bsolid\\b|neutral/i\n};\n\n// Brand guess from the listing title. Wayfair titles are product names, so only\n// collaborations like \"x Loloi\" are detected there.\nconst NOT_BRANDS = new Set(('area rug rugs washable large small modern boho shag ultra soft fluffy checkered abstract vintage ' +\n  'black white blue grey gray ivory cream beige brown red green pink navy tan indoor outdoor the super machine plush fuzzy ' +\n  'round runner runners hallway kitchen living bedroom upgrade doormat entryway floral geometric moroccan neutral natural ' +\n  'light dark multi performance extra thick thin non-slip nonslip fluffy shaggy faux premium luxury new set pack door mat ' +\n  'washable-rug contemporary traditional oriental persian bathroom dining office nursery kids jute wool cotton').split(/\\s+/));\n// Multi-word brands that the first-word rule would cut short.\nconst BRAND_PATTERNS = [\n  [/by drew barrymore/i, 'BEAUTIFUL BY DREW BARRYMORE'],\n  [/^jonathan\\s+y\\b/i, 'JONATHAN Y'],\n  [/^nicole\\s+miller\\b/i, 'NICOLE MILLER'],\n  [/^better\\s+homes/i, 'BETTER HOMES & GARDENS'],\n  [/^my\\s+texas\\s+house\\b/i, 'MY TEXAS HOUSE'],\n  [/^stone\\s*&\\s*beam\\b/i, 'STONE & BEAM'],\n  [/^amazon\\s+basics\\b/i, 'AMAZON BASICS']\n];\n// Retailer-owned private labels: competitors' own brands, not suppliers Wayfair can recruit.\nconst PRIVATE_LABELS = { 'MAINSTAYS': 'Walmart', 'BETTER HOMES & GARDENS': 'Walmart', 'BEAUTIFUL BY DREW BARRYMORE': 'Walmart', 'MY TEXAS HOUSE': 'Walmart', 'AMAZON BASICS': 'Amazon', 'STONE & BEAM': 'Amazon', 'RIVET': 'Amazon' };\nfunction brandOf(retailer, title) {\n  if (/\\bloloi\\b/i.test(title)) return 'LOLOI';\n  if (retailer === 'wayfair') return null;\n  for (const [re, name] of BRAND_PATTERNS) if (re.test(title)) return name;\n  const first = (title.trim().split(/[\\s,:;|]+/)[0] || '').replace(/[^A-Za-z&'-]/g, '').toUpperCase();\n  if (first.length < 3 || NOT_BRANDS.has(first.toLowerCase())) return null;\n  return first;\n}\n\n// ---------- normalize products ----------\nconst products = [];\nconst productsBy = {};\nfor (const r of RETAILERS) {\n  productsBy[r] = (raw[r] || []).map((p, i) => {\n    let title = String(p.name || '').trim();\n    let variant = '';\n    const v = title.match(/^(.*?),\\s*variant on\\s+(.+)$/i); // Walmart: \"Color, variant on TITLE\"\n    if (v) { variant = v[1].trim(); title = v[2].trim(); }\n    const text = [title, (p.details || []).join(' '), p.pattern || ''].join(' ');\n    const size = parseSize(title);\n    const price = firstNumber(p.price);\n    const prod = {\n      id: PREFIX[r] + (i + 1),\n      retailer: r,\n      retailerLabel: LABEL[r],\n      title,\n      variant,\n      url: p.url || '',\n      imageUrl: p.image_url || '',\n      price: price && price > 0 ? price : null,\n      rating: firstNumber(p.rating),\n      reviews: firstNumber(p.review_count),\n      size: size ? size.label : null,\n      sqft: size ? size.sqft : null,\n      pricePerSqft: size && price ? Math.round((price / size.sqft) * 100) / 100 : null,\n      brand: brandOf(r, title),\n      features: Object.keys(FEATURES).filter(k => FEATURES[k].test(text)),\n      styles: Object.keys(STYLES).filter(k => STYLES[k].test(text))\n    };\n    products.push(prod);\n    return prod;\n  });\n}\n\n// ---------- fail loudly if a retailer is missing ----------\nconst missing = RETAILERS.filter(r => !productsBy[r].some(p => p.price !== null)).map(r => LABEL[r]);\nif (missing.length) {\n  return [{ json: { ok: false, errorReason: 'missing_retailer_data', missingRetailers: missing } }];\n}\n\n// ---------- statistics ----------\nconst round2 = x => (x == null ? null : Math.round(x * 100) / 100);\nfunction median(arr) {\n  const a = arr.filter(x => x != null).sort((x, y) => x - y);\n  if (!a.length) return null;\n  const m = Math.floor(a.length / 2);\n  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;\n}\nfunction mean(arr) {\n  const a = arr.filter(x => x != null);\n  return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;\n}\nconst BANDS = [\n  { label: 'Under $30', min: 0, max: 30 },\n  { label: '$30-$74', min: 30, max: 75 },\n  { label: '$75-$149', min: 75, max: 150 },\n  { label: '$150-$299', min: 150, max: 300 },\n  { label: '$300+', min: 300, max: Infinity }\n];\nconst countBy = (list, key) => {\n  const out = {};\n  for (const p of list) for (const k of p[key]) out[k] = (out[k] || 0) + 1;\n  return out;\n};\n\nconst retailers = {};\nfor (const r of RETAILERS) {\n  const list = productsBy[r];\n  const prices = list.map(p => p.price);\n  const priced = prices.filter(x => x != null);\n  const topReviewed = list.filter(p => p.reviews != null).sort((a, b) => b.reviews - a.reviews)[0] || null;\n  const brandCounts = {};\n  list.forEach(p => { if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1; });\n  retailers[r] = {\n    label: LABEL[r],\n    listings: list.length,\n    pricedListings: priced.length,\n    priceMin: round2(Math.min(...priced)),\n    priceMax: round2(Math.max(...priced)),\n    priceMedian: round2(median(prices)),\n    priceMean: round2(mean(prices)),\n    priceBands: BANDS.map(b => ({ band: b.label, count: priced.filter(x => x >= b.min && x < b.max).length })),\n    avgRating: round2(mean(list.map(p => p.rating))),\n    medianReviews: median(list.map(p => p.reviews)),\n    totalReviews: list.reduce((s, p) => s + (p.reviews || 0), 0),\n    listingsUnder10Reviews: list.filter(p => p.reviews != null && p.reviews < 10).length,\n    listingsWithSize: list.filter(p => p.sqft).length,\n    medianPricePerSqft: round2(median(list.map(p => p.pricePerSqft))),\n    features: countBy(list, 'features'),\n    styles: countBy(list, 'styles'),\n    brands: brandCounts,\n    topReviewed: topReviewed ? { id: topReviewed.id, title: topReviewed.title, reviews: topReviewed.reviews, price: topReviewed.price } : null\n  };\n}\n\n// ---------- cross-retailer signals ----------\nconst featureGaps = Object.keys(FEATURES).map(f => ({\n  feature: f,\n  wayfair: retailers.wayfair.features[f] || 0,\n  amazon: retailers.amazon.features[f] || 0,\n  walmart: retailers.walmart.features[f] || 0\n})).filter(g => g.amazon + g.walmart >= 3 && g.wayfair <= 1);\n\nconst styleGaps = Object.keys(STYLES).map(s => ({\n  style: s,\n  wayfair: retailers.wayfair.styles[s] || 0,\n  amazon: retailers.amazon.styles[s] || 0,\n  walmart: retailers.walmart.styles[s] || 0\n})).filter(g => g.amazon + g.walmart >= 3 && g.wayfair <= 1);\n\nconst priceBandGaps = BANDS.map((b, i) => ({\n  band: b.label,\n  wayfair: retailers.wayfair.priceBands[i].count,\n  amazon: retailers.amazon.priceBands[i].count,\n  walmart: retailers.walmart.priceBands[i].count\n})).filter(g => (g.wayfair === 0 && g.amazon + g.walmart >= 3) || (g.wayfair >= 3 && g.amazon + g.walmart === 0));\n\nconst brandMap = {};\nfor (const p of products) {\n  if (!p.brand) continue;\n  const b = brandMap[p.brand] || (brandMap[p.brand] = { brand: p.brand, retailers: new Set(), listings: 0, totalReviews: 0, ids: [], minPrice: null, maxPrice: null });\n  b.retailers.add(p.retailerLabel);\n  b.listings++;\n  b.totalReviews += p.reviews || 0;\n  b.ids.push(p.id);\n  if (p.price != null) {\n    b.minPrice = b.minPrice == null ? p.price : Math.min(b.minPrice, p.price);\n    b.maxPrice = b.maxPrice == null ? p.price : Math.max(b.maxPrice, p.price);\n  }\n}\nconst brands = Object.values(brandMap)\n  .map(b => ({ ...b, retailers: [...b.retailers], onSampledWayfair: b.retailers.has('Wayfair'), privateLabelOf: PRIVATE_LABELS[b.brand] || null }))\n  .sort((a, b) => b.totalReviews - a.totalReviews);\n\nconst metrics = {\n  retailers,\n  crossRetailer: {\n    medianPriceGapVsAmazon: round2(retailers.wayfair.priceMedian - retailers.amazon.priceMedian),\n    medianPriceGapVsWalmart: round2(retailers.wayfair.priceMedian - retailers.walmart.priceMedian),\n    featureGaps,\n    styleGaps,\n    priceBandGaps,\n    brands,\n    supplierLeads: brands.filter(b => !b.onSampledWayfair && !b.privateLabelOf).slice(0, 8)\n  }\n};\n\n// ---------- prompt context shared by every agent ----------\nconst snapshotDates = RETAILERS.map(r => scrapedAt[r]).filter(Boolean).map(d => d.slice(0, 10));\nconst snapshot = [...new Set(snapshotDates)].join(', ') || 'unknown';\nconst money = x => (x == null ? 'n/a' : '$' + x.toFixed(2));\nconst productLines = products.map(p => [\n  p.id,\n  p.retailerLabel,\n  money(p.price),\n  (p.rating != null ? p.rating + ' stars' : 'no rating') + ' (' + (p.reviews != null ? p.reviews.toLocaleString('en-US') : '0') + ' reviews)',\n  'size: ' + (p.size || 'not in title'),\n  p.pricePerSqft != null ? money(p.pricePerSqft) + '/sq ft' : '',\n  'brand: ' + (p.brand || 'unknown'),\n  p.features.length ? 'features: ' + p.features.join(', ') : '',\n  p.title.slice(0, 140)\n].filter(Boolean).join(' | '));\n\nconst promptContext = [\n  'CATEGORY: ' + parsed.selectedCategory,\n  'FOCUS: ' + (parsed.focus || 'none'),\n  'PERSPECTIVE: You work for Wayfair. \"Wayfair\" is us; Amazon and Walmart are competitors.',\n  'DATA: ' + RETAILERS.map(r => retailers[r].listings + ' ' + LABEL[r]).join(', ') +\n    ' listings, one snapshot scraped ' + snapshot + '. No sales, conversion, traffic or price-history data exists.',\n  'NOTE: Wayfair titles rarely include rug size, so Wayfair price-per-square-foot is based on ' +\n    retailers.wayfair.listingsWithSize + ' of ' + retailers.wayfair.listings + ' listings. Treat Wayfair list prices as \"starting at\" prices.',\n  '',\n  'RETAILER METRICS (computed in code; use these exact numbers):',\n  JSON.stringify(retailers),\n  '',\n  'CROSS-RETAILER SIGNALS (computed in code):',\n  JSON.stringify(metrics.crossRetailer),\n  '',\n  'PRODUCTS (cite by ID):',\n  productLines.join('\\n')\n].join('\\n');\n\nreturn [{\n  json: {\n    ok: true,\n    category: parsed.selectedCategory,\n    categoryKey: parsed.categoryKey,\n    focus: parsed.focus,\n    snapshot,\n    metrics,\n    products,\n    promptContext\n  }\n}];\n"
+      },
+      "id": "24b78c06-f451-435a-a7f4-78cad022f79a",
+      "name": "Compute Competitor Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "45235575-abbe-4ce7-8e41-f7e715d267b6",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0cf699a-46b1-4659-ae96-6d66affc04f2",
+      "name": "All Retailers Returned Data?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Competitor Analysis section. Profile each retailer's position in this category based on the sampled listings: Wayfair (our baseline), Amazon and Walmart.\nFor each retailer cover:\n- Price: median and range, and the price band where most listings sit.\n- Assortment: dominant features and styles (use the feature and style counts).\n- Proof: average rating and review depth (median and total reviews); note listings with under 10 reviews.\n- Standout: the most-reviewed listing, cited by ID.\nRate Amazon and Walmart as a threat to Wayfair in this category (high, medium or low) with a one-sentence reason grounded in the numbers. Wayfair gets the \"Baseline\" badge.\n\nOUTPUT FORMAT:\n<section class=\"competitor-analysis\">\n  <h2>Competitor Analysis</h2>\n  <p>[1-2 sentence overview of how the three retailers differ]</p>\n  <div class=\"retailer-grid\">\n    <div class=\"retailer-card wayfair\">\n      <h3>Wayfair</h3>\n      <span class=\"threat baseline\">Baseline</span>\n      <p>[positioning in one sentence]</p>\n      <ul>\n        <li><strong>Price:</strong> [...]</li>\n        <li><strong>Assortment:</strong> [...]</li>\n        <li><strong>Proof:</strong> [...]</li>\n        <li><strong>Standout:</strong> [...] (WF#)</li>\n      </ul>\n    </div>\n    <div class=\"retailer-card amazon\">\n      <h3>Amazon</h3>\n      <span class=\"threat [high|medium|low]\">[High|Medium|Low] threat</span>\n      <p>[positioning in one sentence]</p>\n      <ul>\n        <li><strong>Price:</strong> [...]</li>\n        <li><strong>Assortment:</strong> [...]</li>\n        <li><strong>Proof:</strong> [...]</li>\n        <li><strong>Standout:</strong> [...] (AZ#)</li>\n        <li><strong>Why it matters:</strong> [threat reason]</li>\n      </ul>\n    </div>\n    <div class=\"retailer-card walmart\">[same structure as Amazon, IDs WM#]</div>\n  </div>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "577869b5-0c23-4340-903a-99cefdaf296c",
+      "name": "Competitor Analysis Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2032,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "d2d125a8-f9cf-4b73-a629-28950f67ff82",
+      "name": "Mistral - Competitor Analysis Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2032,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "8f317640-ca82-4acd-be9e-9b48b2b0b29d",
+      "name": "Wait 1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2272,
+        336
+      ],
+      "webhookId": "d9326bc2-77ec-408a-8d03-c5f2ba0b53e2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Head-to-Head Comparison section. A table with the exact metrics is inserted automatically directly under your <h2>, so do NOT build a table and do not restate every number. Interpret the comparison.\n- 4-6 observations a category manager would act on. Each names the metric and gives the numbers for the retailers it compares.\n- Where Wayfair wins (2-4 points) and where Wayfair trails (2-4 points), each backed by a number or product ID.\n\nOUTPUT FORMAT:\n<section class=\"comparison\">\n  <h2>Head-to-Head Comparison</h2>\n  <h3>What the numbers show</h3>\n  <ul>\n    <li><strong>[Metric]:</strong> [observation with numbers]</li>\n  </ul>\n  <div class=\"win-lose-grid\">\n    <div class=\"wins\"><h4>Where Wayfair wins</h4><ul><li>[...]</li></ul></div>\n    <div class=\"gaps\"><h4>Where Wayfair trails</h4><ul><li>[...]</li></ul></div>\n  </div>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "5ab53b3b-ab3b-43cd-84cc-400151c66282",
+      "name": "Comparison Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2512,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "30690870-7292-446f-a549-fc6a5521666f",
+      "name": "Mistral - Comparison Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2512,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "f325871f-8d5a-4675-8445-83baca1b8c10",
+      "name": "Wait 2",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2752,
+        336
+      ],
+      "webhookId": "c07d02f6-a94b-4bcb-be3f-a8f61cbabe1c"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Pricing & Whitespace section. A price-band table is inserted automatically directly under your <h2>.\n1. Price positioning: compare median prices and ranges. Use medianPriceGapVsAmazon and medianPriceGapVsWalmart from CROSS-RETAILER SIGNALS (positive means Wayfair's median list price is higher). Price per square foot is only available for sized Amazon and Walmart listings; you may compare those two.\n2. Price band gaps: use priceBandGaps. Explain which bands Wayfair's sampled listings do not cover while competitors do, or the reverse.\n3. Whitespace opportunities: 2-4 opportunities from featureGaps, styleGaps and priceBandGaps, where competitors list something Wayfair's sampled listings do not. For each give the gap, the evidence (counts and product IDs) and one concrete assortment or merchandising move. If there are no gaps, say so and describe the closest near-gap honestly.\n\nOUTPUT FORMAT:\n<section class=\"pricing-whitespace\">\n  <h2>Pricing &amp; Whitespace</h2>\n  <h3>Price positioning</h3>\n  <p>[...]</p>\n  <h3>Price band gaps</h3>\n  <ul><li>[...]</li></ul>\n  <h3>Whitespace opportunities</h3>\n  <div class=\"opportunity-card\">\n    <h4>[Opportunity name]</h4>\n    <p><strong>Evidence:</strong> [counts and IDs]</p>\n    <p class=\"opportunity-action\"><strong>Move:</strong> [specific action]</p>\n  </div>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "97dee7ef-cb41-41a2-aef4-6f5e18942971",
+      "name": "Pricing & Whitespace Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2992,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "32f24c81-3a9b-4f83-baf1-445d4672c72a",
+      "name": "Mistral - Pricing & Whitespace Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2992,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "698adf53-13c4-4c04-a4a7-d7b664eee42b",
+      "name": "Wait 3",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3232,
+        336
+      ],
+      "webhookId": "a8dcc575-42e8-4269-937f-115364bb7c7d"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Supplier Identification section: brands selling this category at competitors that Wayfair's buyers could approach.\nUse only crossRetailer.brands and crossRetailer.supplierLeads. Code inferred these brands from listing titles.\n- Only name brands that appear in that data. Never add brands from your own knowledge.\n- Skip any brand whose privateLabelOf is set: it is a competitor's own label and cannot be recruited. You may mention competitor private-label presence in one sentence.\n- \"Not in the sampled Wayfair listings\" is NOT the same as \"not sold on Wayfair\". Always use the first wording.\n- Rank leads by review volume (a proxy for customer traction, not sales) and breadth (seen at both Amazon and Walmart).\n- List 4-6 leads. If fewer than 3 valid leads exist, say so plainly.\n\nOUTPUT FORMAT:\n<section class=\"supplier-identification\">\n  <h2>Supplier Identification</h2>\n  <p>[1-2 sentences on method and what the leads have in common]</p>\n  <div class=\"table-wrap\"><table class=\"data-table\">\n    <thead><tr><th>Brand</th><th>Seen at</th><th>Listings</th><th>Reviews</th><th>Price range</th><th>Why approach</th></tr></thead>\n    <tbody>\n      <tr><td>[Brand]</td><td>[Amazon / Walmart]</td><td>[n] ([IDs])</td><td>[total reviews]</td><td>[$min to $max]</td><td>[one sentence]</td></tr>\n    </tbody>\n  </table></div>\n  <h3>Priority outreach</h3>\n  <ul><li><strong>[Brand]:</strong> [why first, and what to ask for]</li></ul>\n  <p>[one sentence: confirm each brand's current Wayfair catalog and supplier status before outreach]</p>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "3d13144c-6856-435f-b9fb-6d80fb727979",
+      "name": "Supplier Identification Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3472,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "1f4d8031-bb8b-4b15-acc8-7b6c817b2d5f",
+      "name": "Mistral - Supplier Identification Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3472,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "26ac0e25-07bf-46f6-9067-5b58f1b9e5c3",
+      "name": "Wait 4",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3712,
+        336
+      ],
+      "webhookId": "4d8f845d-c655-4ea9-a901-e04ff9b438ea"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}\n\nEARLIER SECTIONS (text only):\n\nCOMPETITOR ANALYSIS:\n{{ ($('Competitor Analysis Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nCOMPARISON:\n{{ ($('Comparison Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nPRICING & WHITESPACE:\n{{ ($('Pricing & Whitespace Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nSUPPLIER IDENTIFICATION:\n{{ ($('Supplier Identification Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Recommendations section. You also receive the text of the earlier report sections. Build on them and do not contradict them.\nGive 5-6 recommendations, ordered by priority. Each must:\n- Be a concrete decision: pricing, assortment, supplier outreach, merchandising/content, or monitoring.\n- Cite the evidence (counts, prices, product IDs).\n- Carry a priority badge: \"Act now\" (class act), \"Test\" (class test) or \"Watch\" (class watch).\nInclude at least one supplier recommendation and one monitoring recommendation (what to re-check in the next run).\n\nOUTPUT FORMAT:\n<section class=\"recommendations\">\n  <h2>Recommendations</h2>\n  <div class=\"rec-list\">\n    <div class=\"rec-item\">\n      <div class=\"rec-number\">1</div>\n      <div>\n        <span class=\"rec-priority act\">Act now</span>\n        <h4>[The action in one line]</h4>\n        <p><strong>Evidence:</strong> [...]</p>\n        <p><strong>Expected effect:</strong> [qualitative, no invented numbers]</p>\n      </div>\n    </div>\n  </div>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "61824e4b-c1a1-4c07-b82b-37fb49812730",
+      "name": "Recommendations Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3952,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "a3d148b4-c032-41a6-97fd-fd4ac9434cba",
+      "name": "Mistral - Recommendations Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3952,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "56e4826c-af84-4093-a21f-70c8b579e00b",
+      "name": "Wait 5",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4192,
+        336
+      ],
+      "webhookId": "79ffb7cf-b730-4544-ab98-2ff79f584af7"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Compute Competitor Metrics').first().json.promptContext }}\n\nREPORT SECTIONS (text only):\n\nCOMPETITOR ANALYSIS:\n{{ ($('Competitor Analysis Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nCOMPARISON:\n{{ ($('Comparison Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nPRICING & WHITESPACE:\n{{ ($('Pricing & Whitespace Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nSUPPLIER IDENTIFICATION:\n{{ ($('Supplier Identification Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}\n\nRECOMMENDATIONS:\n{{ ($('Recommendations Agent').first().json.output || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim() }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst on Wayfair's Rugs category team, writing one section of a competitor report for the category manager. Wayfair is 'us'; Amazon and Walmart are competitors.\n\nTASK: Write the Executive Summary for a busy category manager who will read only this section. You receive the computed data and the text of every other section. Summarize them; do not introduce new claims.\n- Key insight: the single most important competitive finding in 1-2 sentences, with its numbers.\n- Key findings: 4-5 bullets covering pricing position, the biggest assortment gap, the strongest competitor threat, the top supplier lead, and the top recommendation.\n- Why this matters: 2-3 sentences on the business decision this informs.\n- One closing sentence stating the data basis (listings per retailer and snapshot date).\n\nOUTPUT FORMAT:\n<section class=\"executive-summary\">\n  <h2>Executive Summary</h2>\n  <div class=\"summary-hero\">\n    <div class=\"key-insight\">\n      <span class=\"label\">Key insight</span>\n      <p>[...]</p>\n    </div>\n  </div>\n  <h3>Key findings</h3>\n  <ul><li><strong>[Topic]:</strong> [finding]</li></ul>\n  <h3>Why this matters</h3>\n  <p>[...]</p>\n  <p class=\"table-note\">[data basis sentence]</p>\n</section>\n\nEVIDENCE RULES (strict):\n- Use only numbers that appear in RETAILER METRICS, CROSS-RETAILER SIGNALS or PRODUCTS. Never invent market share, sales, revenue, growth rates, conversion, traffic or survey figures.\n- Express findings as counts, e.g. \"7 of 10 Amazon listings are washable\". A percentage is allowed only when the count is stated in the same sentence.\n- Cite supporting products by ID in parentheses, e.g. (AZ3, WM7).\n- This is a snapshot of up to 10 listings per retailer. Write \"among the sampled listings\", never \"the market\" or \"customers prefer\".\n- Wayfair titles rarely state rug size, so never claim Wayfair is cheaper or pricier per square foot. Compare list prices and call them list prices.\n- If the data does not support a claim, leave it out. Do not state a year unless it appears in the data.\n\nFORMATTING (strict): Output exactly one <section> element and nothing else, with no text before or after it. HTML only. Never use Markdown: no ** or *, no # headings, no '-' bullet lines, no code fences. Use <h3>/<h4> for headings and <ul><li> for lists. Use <strong> only for short labels (e.g. 'Evidence:'), never for whole sentences. Do not use italics (<em> or <i>)."
+        }
+      },
+      "id": "252249a7-fc97-4c94-bd32-2925749768a0",
+      "name": "Executive Summary Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        4432,
+        336
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "2e6147a3-ed1e-4117-aefe-6c189f000046",
+      "name": "Mistral - Executive Summary Agent",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        4432,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect Sections: gather every agent's HTML plus the computed data.\n// Node names here must match the agent node names exactly (case-sensitive).\nconst AGENTS = {\n  executive: 'Executive Summary Agent',\n  competitors: 'Competitor Analysis Agent',\n  comparison: 'Comparison Agent',\n  pricing: 'Pricing & Whitespace Agent',\n  suppliers: 'Supplier Identification Agent',\n  recommendations: 'Recommendations Agent'\n};\n\nconst sections = {};\nfor (const [key, nodeName] of Object.entries(AGENTS)) {\n  try { sections[key] = String($(nodeName).first().json.output || ''); } catch (e) { sections[key] = ''; }\n}\n\nconst data = $('Compute Competitor Metrics').first().json;\n\nreturn [{\n  json: {\n    sections,\n    metadata: {\n      category: data.category,\n      categoryKey: data.categoryKey,\n      focus: data.focus,\n      snapshot: data.snapshot,\n      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })\n    },\n    metrics: data.metrics,\n    products: data.products\n  }\n}];\n"
+      },
+      "id": "aae82e69-34ae-4d70-bf1f-80001f2b5aee",
+      "name": "Collect Sections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble HTML Report\n// Cleans each agent section, adds code-built tables (comparison + product appendix),\n// and wraps everything in one styled, self-contained HTML page.\nvar data = $input.first().json;\nvar sections = data.sections || {};\nvar meta = data.metadata || {};\nvar metrics = data.metrics || {};\nvar products = data.products || [];\nvar R = metrics.retailers || {};\nvar RETAILERS = ['wayfair', 'amazon', 'walmart'];\n\nfunction esc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction money(x) { return x == null ? 'n/a' : '$' + Number(x).toFixed(2); }\n\n// ---- 1. Strip model chatter before/after each <section> ----\nObject.keys(sections).forEach(function (k) {\n  var s = String(sections[k] || '').replace(/```html\\s*/gi, '').replace(/```\\s*/g, '').replace(/\\\\n/g, '\\n').replace(/\\\\\"/g, '\"');\n  var a = s.indexOf('<section');\n  var b = s.lastIndexOf('</section>');\n  sections[k] = (a > -1 && b > a) ? s.slice(a, b + 10) : '';\n});\n\n// ---- 2. Formatting cleanup (from the Phase 2 report): Markdown -> HTML, no italics, hashtag pills ----\nvar CATEGORY_NAMES = { area_rug: 'Area Rug', outdoor_rug: 'Outdoor Rug', hallway_runner: 'Hallway Runner', shag_rug: 'Shag Rug' };\nfunction fixText(t) {\n  t = t.replace(/(^|\\n)[ \\t]*#{1,6}[ \\t]+([^\\n]+)/g, function (m, pre, h) { return pre + '<h4>' + h.trim() + '</h4>'; });\n  t = t.replace(/\\*\\*([^*\\n]{1,200}?)\\*\\*/g, '<strong>$1</strong>');\n  t = t.replace(/__([^_\\n]{1,200}?)__/g, '<strong>$1</strong>');\n  t = t.replace(/(^|[\\s(>])\\*([^*\\s][^*\\n]{0,150}?)\\*(?=[\\s.,;:!?)<]|$)/g, '$1$2');\n  t = t.replace(/\\*\\*/g, '');\n  t = t.replace(/(?:^|\\n)((?:[ \\t]*[-\u2022*][ \\t]+[^\\n]+(?:\\n|$))+)/g, function (m, block) {\n    var items = block.split('\\n').map(function (l) { return l.replace(/^[ \\t]*[-\u2022*][ \\t]+/, '').trim(); }).filter(Boolean);\n    return '\\n<ul>' + items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul>\\n';\n  });\n  t = t.replace(/\\b(area_rug|outdoor_rug|hallway_runner|shag_rug)\\b/g, function (m) { return CATEGORY_NAMES[m] || m; });\n  t = t.replace(/(^|[\\s(>,])#([A-Za-z][A-Za-z0-9_]{1,40})\\b/g, function (m, pre, tag) {\n    if (/^[0-9a-fA-F]{3,8}$/.test(tag)) return m;\n    return pre + '<span class=\"hashtag\">#' + tag + '</span>';\n  });\n  return t;\n}\nfunction formatFix(html) {\n  var keep = [];\n  html = html.replace(/<(style|script)[\\s\\S]*?<\\/\\1>/gi, function (m) { keep.push(m); return '\\u0000' + (keep.length - 1) + '\\u0000'; });\n  var parts = html.split(/(<[^>]+>)/);\n  for (var i = 0; i < parts.length; i++) { if (parts[i] && parts[i].charAt(0) !== '<') parts[i] = fixText(parts[i]); }\n  html = parts.join('');\n  html = html.replace(/<\\/?(em|i)(\\s[^>]*)?>/gi, '');\n  return html.replace(/\\u0000(\\d+)\\u0000/g, function (m, n) { return keep[+n]; });\n}\nObject.keys(sections).forEach(function (k) { sections[k] = formatFix(sections[k]); });\n\n// ---- 3. Visible placeholder for any section an agent failed to produce ----\nvar TITLES = {\n  executive: 'Executive Summary', competitors: 'Competitor Analysis', comparison: 'Head-to-Head Comparison',\n  pricing: 'Pricing & Whitespace', suppliers: 'Supplier Identification', recommendations: 'Recommendations'\n};\nvar missingSections = [];\nObject.keys(TITLES).forEach(function (k) {\n  if (!sections[k]) {\n    missingSections.push(TITLES[k]);\n    sections[k] = '<section class=\"section-missing\"><h2>' + esc(TITLES[k]) + '</h2><p>This section was not generated in this run: the AI agent returned no usable HTML. Check the agent node in the n8n execution and rerun.</p></section>';\n  }\n});\n\n// ---- 4. Code-built comparison table (exact numbers, never AI-written) ----\nfunction row(label, fn, note) {\n  return '<tr><th scope=\"row\">' + esc(label) + (note ? '<span class=\"row-note\">' + esc(note) + '</span>' : '') + '</th>' +\n    RETAILERS.map(function (r) { return '<td' + (r === 'wayfair' ? ' class=\"us\"' : '') + '>' + fn(R[r] || {}) + '</td>'; }).join('') + '</tr>';\n}\nfunction ofN(key, name) {\n  return function (x) { return ((x[key] || {})[name] || 0) + ' of ' + (x.listings || 0); };\n}\nvar FEATURE_ROWS = ['Washable', 'Non-slip backing', 'Indoor/outdoor', 'Shag / high pile', 'Low pile / flatweave', 'Natural fiber', 'Designer collaboration'];\nvar comparisonTable =\n  '<div class=\"table-wrap\"><table class=\"data-table compare-table\"><thead><tr><th>Metric</th><th class=\"us\">Wayfair</th><th>Amazon</th><th>Walmart</th></tr></thead><tbody>' +\n  row('Listings analyzed', function (x) { return x.listings; }) +\n  row('Price range', function (x) { return money(x.priceMin) + ' to ' + money(x.priceMax); }) +\n  row('Median price', function (x) { return money(x.priceMedian); }) +\n  row('Average price', function (x) { return money(x.priceMean); }) +\n  row('Median price per sq ft', function (x) { return x.medianPricePerSqft == null ? 'n/a' : money(x.medianPricePerSqft); }, 'listings with size in title') +\n  row('Listings with size in title', function (x) { return x.listingsWithSize + ' of ' + x.listings; }) +\n  row('Average rating', function (x) { return x.avgRating == null ? 'n/a' : x.avgRating.toFixed(2); }) +\n  row('Median review count', function (x) { return x.medianReviews == null ? 'n/a' : Math.round(x.medianReviews).toLocaleString('en-US'); }) +\n  row('Total reviews', function (x) { return (x.totalReviews || 0).toLocaleString('en-US'); }) +\n  row('Listings with under 10 reviews', function (x) { return x.listingsUnder10Reviews + ' of ' + x.listings; }) +\n  FEATURE_ROWS.map(function (f) { return row(f, ofN('features', f)); }).join('') +\n  '</tbody></table></div>' +\n  '<p class=\"table-note\">Computed directly from the sampled listings. Counts, not market share.</p>';\n\nvar bandTable =\n  '<div class=\"table-wrap\"><table class=\"data-table\"><thead><tr><th>Price band</th><th class=\"us\">Wayfair</th><th>Amazon</th><th>Walmart</th></tr></thead><tbody>' +\n  ((R.wayfair && R.wayfair.priceBands) || []).map(function (b, i) {\n    return '<tr><th scope=\"row\">' + esc(b.band) + '</th>' + RETAILERS.map(function (r) {\n      var c = R[r].priceBands[i].count;\n      return '<td' + (r === 'wayfair' ? ' class=\"us\"' : '') + '>' + (c ? c : '<span class=\"zero\">0</span>') + '</td>';\n    }).join('') + '</tr>';\n  }).join('') +\n  '</tbody></table></div>';\n\nfunction injectAfterH2(html, block) {\n  var m = html.match(/<\\/h2>/i);\n  if (!m) return html.replace(/<section[^>]*>/i, function (s) { return s + block; });\n  var idx = html.indexOf(m[0]) + m[0].length;\n  return html.slice(0, idx) + block + html.slice(idx);\n}\nsections.comparison = injectAfterH2(sections.comparison, comparisonTable);\nsections.pricing = injectAfterH2(sections.pricing, '<h3>Listings by price band</h3>' + bandTable);\n\n// ---- 5. Product appendix: every listing the report is based on ----\nvar appendix =\n  '<section class=\"appendix\"><h2>Appendix: Listings Analyzed</h2>' +\n  '<p>Product IDs cited in this report (for example AZ3) refer to the rows below. Brand is inferred from the listing title.</p>' +\n  '<div class=\"table-wrap\"><table class=\"data-table product-table\"><thead><tr><th>ID</th><th>Retailer</th><th>Product</th><th>Price</th><th>Rating</th><th>Reviews</th><th>Size</th><th>Brand</th></tr></thead><tbody>' +\n  products.map(function (p) {\n    var name = esc(p.title.length > 90 ? p.title.slice(0, 87) + '...' : p.title);\n    return '<tr class=\"r-' + p.retailer + '\"><td class=\"pid\">' + esc(p.id) + '</td><td>' + esc(p.retailerLabel) + '</td>' +\n      '<td>' + (p.url ? '<a href=\"' + esc(p.url) + '\" target=\"_blank\" rel=\"noopener\">' + name + '</a>' : name) + (p.variant ? '<span class=\"variant\">' + esc(p.variant) + '</span>' : '') + '</td>' +\n      '<td>' + money(p.price) + '</td><td>' + (p.rating == null ? 'n/a' : p.rating) + '</td>' +\n      '<td>' + (p.reviews == null ? 'n/a' : Number(p.reviews).toLocaleString('en-US')) + '</td>' +\n      '<td>' + esc(p.size || '') + '</td><td>' + esc(p.brand || '') + '</td></tr>';\n  }).join('') +\n  '</tbody></table></div></section>';\n\n// ---- 6. Page shell ----\nvar CSS = [\n  ':root{--primary:#7C3AED;--primary-dark:#5B21B6;--primary-light:#A78BFA;--secondary:#1F2937;--accent:#F59E0B;--success:#10B981;--danger:#EF4444;--bg:#F9FAFB;--card:#FFFFFF;--border:#E5E7EB;--text:#1F2937;--muted:#6B7280;--us:#F5F3FF}',\n  '*{margin:0;padding:0;box-sizing:border-box}',\n  'body{font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;font-size:14px;line-height:1.6;color:var(--text);background:var(--bg)}',\n  '.report-container{max-width:1040px;margin:0 auto;padding:40px 24px}',\n  '.report-header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;padding:44px 40px;border-radius:16px;margin-bottom:28px}',\n  '.report-header h1{font-size:30px;font-weight:700;margin-bottom:6px}',\n  '.report-header .subtitle{font-size:16px;opacity:.92}',\n  '.report-header .meta{margin-top:14px;font-size:13px;opacity:.85}',\n  '.report-toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}',\n  '.report-toc a{font-size:12px;font-weight:600;color:var(--primary-dark);background:#EDE9FE;padding:6px 12px;border-radius:999px;text-decoration:none}',\n  'section{background:var(--card);border-radius:12px;padding:32px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}',\n  'section h2{font-size:22px;font-weight:600;color:var(--secondary);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--primary-light)}',\n  'section h3{font-size:16px;font-weight:600;color:var(--primary);margin:24px 0 12px}',\n  'section h4{font-size:14px;font-weight:600;color:var(--secondary);margin-bottom:6px}',\n  'p{margin-bottom:12px}ul,ol{margin-left:20px;margin-bottom:16px}li{margin-bottom:6px}',\n  'a{color:var(--primary-dark)}',\n  '.summary-hero{background:linear-gradient(135deg,var(--bg) 0%,#EDE9FE 100%);border-radius:12px;padding:24px;margin-bottom:24px}',\n  '.key-insight{border-left:4px solid var(--primary);padding-left:16px}',\n  '.key-insight .label{font-size:11px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.04em}',\n  '.key-insight p{font-size:17px;font-weight:500;margin:8px 0 0}',\n  '.retailer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}',\n  '.retailer-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px}',\n  '.retailer-card.wayfair{background:var(--us);border-color:var(--primary-light)}',\n  '.retailer-card h3{margin-top:0}',\n  '.retailer-card ul{margin-left:16px;font-size:13px}',\n  '.threat{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px}',\n  '.threat.high{background:#FEE2E2;color:#B91C1C}.threat.medium{background:#FEF3C7;color:#B45309}.threat.low{background:#D1FAE5;color:#047857}.threat.baseline{background:#EDE9FE;color:var(--primary-dark)}',\n  '.table-wrap{overflow-x:auto;margin:12px 0 8px}',\n  '.data-table{width:100%;border-collapse:collapse;font-size:13px}',\n  '.data-table th,.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}',\n  '.data-table thead th{background:var(--secondary);color:#fff;font-weight:600;font-size:12px}',\n  '.data-table thead th.us{background:var(--primary)}',\n  '.data-table td.us{background:var(--us);font-weight:600}',\n  '.data-table tbody th{font-weight:500;color:var(--secondary)}',\n  '.row-note{display:block;font-size:11px;color:var(--muted);font-weight:400}',\n  '.zero{color:var(--danger);font-weight:700}',\n  '.table-note{font-size:12px;color:var(--muted)}',\n  '.win-lose-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}',\n  '.win-lose-grid>div{border-radius:10px;padding:18px}',\n  '.wins{background:#ECFDF5;border-left:4px solid var(--success)}.gaps{background:#FEF2F2;border-left:4px solid var(--danger)}',\n  '.opportunity-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:18px;margin-bottom:14px}',\n  '.opportunity-action{font-weight:500;color:var(--secondary);margin-bottom:0}',\n  '.rec-list{display:grid;gap:14px}',\n  '.rec-item{display:flex;gap:16px;padding:20px;background:var(--bg);border-radius:10px}',\n  '.rec-number{width:32px;height:32px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}',\n  '.rec-priority{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:8px}',\n  '.rec-priority.act{background:#FEE2E2;color:#B91C1C}.rec-priority.test{background:#FEF3C7;color:#B45309}.rec-priority.watch{background:#E0E7FF;color:#3730A3}',\n  '.section-missing{border:2px dashed var(--danger);background:#FEF2F2}',\n  '.product-table td{font-size:12px}.pid{font-weight:700;white-space:nowrap}',\n  '.variant{display:block;font-size:11px;color:var(--muted)}',\n  '.r-wayfair td:first-child{border-left:3px solid var(--primary)}',\n  '.hashtag{display:inline-block;padding:1px 9px;margin:1px 2px;border-radius:999px;background:#eef3f8;color:#2b5d8a;font-size:.88em;font-weight:600;white-space:nowrap;line-height:1.6}',\n  '.report-footer{text-align:center;padding:28px;color:var(--muted);font-size:12px}',\n  '@media (max-width:768px){.retailer-grid,.win-lose-grid{grid-template-columns:1fr}.report-header{padding:28px 22px}.report-header h1{font-size:23px}section{padding:22px}}',\n  '@media print{body{background:#fff}.report-toc{display:none}section{box-shadow:none;break-inside:avoid-page}}'\n].join('\\n');\n\nvar ORDER = [\n  ['executive', 'Executive Summary'], ['competitors', 'Competitors'], ['comparison', 'Comparison'],\n  ['pricing', 'Pricing & Whitespace'], ['suppliers', 'Suppliers'], ['recommendations', 'Recommendations']\n];\nvar body = ORDER.map(function (o) {\n  return sections[o[0]].replace(/<section/i, '<section id=\"' + o[0] + '\"');\n}).join('\\n');\nvar toc = '<nav class=\"report-toc\">' + ORDER.map(function (o) { return '<a href=\"#' + o[0] + '\">' + esc(o[1]) + '</a>'; }).join('') + '<a href=\"#appendix\">Listings</a></nav>';\n\nvar counts = RETAILERS.map(function (r) { return (R[r] ? R[r].listings : 0) + ' ' + (R[r] ? R[r].label : r); }).join(', ');\nvar title = esc(meta.category) + ' Competitor Report';\nvar html = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">' +\n  '<title>' + title + '</title>' +\n  '<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">' +\n  '<style>' + CSS + '</style></head><body><div class=\"report-container\">' +\n  '<header class=\"report-header\"><h1>' + title + '</h1>' +\n  '<p class=\"subtitle\">Wayfair vs. Amazon vs. Walmart: pricing, assortment, whitespace and supplier leads</p>' +\n  '<p class=\"meta\">Generated ' + esc(meta.date) + ' | Listings analyzed: ' + esc(counts) + ' | Data snapshot: ' + esc(meta.snapshot) +\n  (meta.focus ? ' | Focus: ' + esc(meta.focus) : '') + '</p></header>' +\n  toc + '<main>' + body + appendix.replace('<section class=\"appendix\"', '<section id=\"appendix\" class=\"appendix\"') + '</main>' +\n  '<footer class=\"report-footer\"><p>Wayfair Competitor Monitoring Agent | Phase 3</p>' +\n  '<p>All figures are computed from the sampled listings above. No sales, traffic or conversion data was used.</p></footer>' +\n  '</div></body></html>';\n\nreturn [{ json: { cleanedHtml: html, missingSections: missingSections } }];\n"
+      },
+      "id": "3c83a4ba-0b0a-417e-9e08-e2252ad76894",
+      "name": "Assemble HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate Report: check every section made it in and flag content worth a human look.\nconst input = $input.first().json;\nconst html = input.cleanedHtml || '';\n\nconst required = {\n  'Executive Summary': 'id=\"executive\"',\n  'Competitor Analysis': 'id=\"competitors\"',\n  'Comparison': 'id=\"comparison\"',\n  'Pricing & Whitespace': 'id=\"pricing\"',\n  'Supplier Identification': 'id=\"suppliers\"',\n  'Recommendations': 'id=\"recommendations\"'\n};\n\nconst warnings = [];\nconst sectionsFound = Object.keys(required).filter(k => html.includes(required[k]));\nconst missing = input.missingSections || [];\nmissing.forEach(s => warnings.push('Section not generated: ' + s));\nif (!html.includes('</html>')) warnings.push('HTML may be truncated');\n\n// Visible text only (drop the <style> block and tags)\nconst text = html.replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ');\nif (/\\*\\*|```/.test(text)) warnings.push('Leftover Markdown found');\n\n// Percentages are allowed only next to a count; list them so a human can check.\nconst percents = text.match(/[^.]{0,60}\\d+(?:\\.\\d+)?\\s?%[^.]{0,40}/g) || [];\nif (percents.length) warnings.push(percents.length + ' percentage claim(s) to double-check, e.g. \"' + percents[0].replace(/^\\S*\\s+/, '').trim() + '\"');\n\nreturn [{\n  json: {\n    cleanedHtml: html,\n    validation: {\n      isValid: missing.length === 0 && html.includes('</html>'),\n      sectionsGenerated: (sectionsFound.length - missing.length) + ' of ' + Object.keys(required).length,\n      warnings\n    }\n  }\n}];\n"
+      },
+      "id": "8f68d5c1-e289-4e24-b7fa-ee626dab257a",
+      "name": "Validate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5152,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Download Report: turn the HTML into a downloadable file and reply in chat.\nconst input = $input.first().json;\nconst html = input.cleanedHtml || '';\nconst validation = input.validation || {};\nconst category = $('Parse Input').first().json.selectedCategory || 'Rug';\n\nconst dateStr = new Date().toISOString().split('T')[0];\nconst fileName = category.toLowerCase().replace(/\\s+/g, '_') + '_competitor_report_' + dateStr + '.html';\n\nconst lines = [\n  category + ' competitor report is ready: ' + fileName,\n  'Sections generated: ' + (validation.sectionsGenerated || 'unknown') + '.',\n  'Download it from this execution: open the \"Download Report\" node, Binary tab, then Download.'\n];\nif ((validation.warnings || []).length) lines.push('Warnings: ' + validation.warnings.join(' | '));\n\nreturn [{\n  json: { output: lines.join('\\n'), fileName, validation, category, generatedAt: new Date().toISOString() },\n  binary: {\n    data: {\n      data: Buffer.from(html, 'utf8').toString('base64'),\n      mimeType: 'text/html',\n      fileName\n    }\n  }\n}];\n"
+      },
+      "id": "ed435f42-36cf-4fe9-8156-2dac102f251a",
+      "name": "Download Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5392,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Input\nChat message such as `area rug` (optional 2nd line `focus: washable`). Invalid category \u2192 Error Response.",
+        "height": 420,
+        "width": 700,
+        "color": 7
+      },
+      "id": "90fca6bb-a834-43ca-84bc-28ec62800e38",
+      "name": "Note: 1. Input",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch & merge\nUp to 10 products each from the externship API (`/api/products/{wayfair|amazon|walmart}`), merged into one list.",
+        "height": 720,
+        "width": 480,
+        "color": 5
+      },
+      "id": "06564571-46d9-4013-b40c-5c129ee1c238",
+      "name": "Note: 2. Fetch & merge",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Compute metrics\nAll numbers in the report come from here: prices, bands, $/sq ft, ratings, feature counts, brands, gaps. Stops if any retailer returned nothing.",
+        "height": 852,
+        "width": 480,
+        "color": 4
+      },
+      "id": "34df0904-fa14-48f0-aedd-8677c3465628",
+      "name": "Note: 3. Compute metrics",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. AI section writers\n6 Mistral agents (`ministral-14b-2512`), 5 s waits for the 0.5 req/s limit. Agents interpret computed numbers and cite product IDs; they never calculate.",
+        "height": 720,
+        "width": 2640,
+        "color": 6
+      },
+      "id": "4d3a397f-b615-432d-9470-a4ee7d257d40",
+      "name": "Note: 4. AI section writers",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 5. Report\nCollect \u2192 clean & style HTML (adds code-built comparison table + product appendix) \u2192 validate \u2192 downloadable file.",
+        "height": 708,
+        "width": 1008,
+        "color": 3
+      },
+      "id": "003f3221-8e0e-49e5-a9a6-0b6b82356d68",
+      "name": "Note: 5. Report",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4608,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reshape FastAPI response to the legacy shape that downstream consumers expect.\nconst r = $input.first().json;\nconst products = r.products || [];\nreturn [{\n  json: {\n    wayfair_products: products.map(p => ({\n      url: p.url,\n      name: p.name,\n      price: p.price,\n      details: p.details || [],\n      pattern: p.pattern || '',\n      image_url: p.image_url || '',\n      rating: p.rating || '',\n      review_count: p.review_count || '',\n      scraped_at: r.scraped_at || new Date().toISOString(),\n    })),\n    totalWayfair: products.length,\n    totalProducts: products.length,\n    scrapedAt: r.scraped_at || new Date().toISOString(),\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        176
+      ],
+      "id": "d0bb3c42-1329-4a58-9160-e83886b9841f",
+      "name": "Reshape Wayfair"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reshape FastAPI response to the legacy shape that downstream consumers expect.\nconst r = $input.first().json;\nconst products = r.products || [];\nreturn [{\n  json: {\n    amazonProducts: products.map(p => ({\n      url: p.url,\n      name: p.name,\n      price: p.price,\n      details: p.details || [],\n      pattern: p.pattern || '',\n      image_url: p.image_url || '',\n      rating: p.rating || '',\n      review_count: p.review_count || '',\n      scraped_at: r.scraped_at || new Date().toISOString(),\n    })),\n    totalAmazonProducts: products.length,\n    totalProducts: products.length,\n    scrapedAt: r.scraped_at || new Date().toISOString(),\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        352
+      ],
+      "id": "37913807-fcad-44ab-b983-eda44d395981",
+      "name": "Reshape Amazon"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reshape FastAPI response to the legacy shape that downstream consumers expect.\nconst r = $input.first().json;\nconst products = r.products || [];\nreturn [{\n  json: {\n    walmartProducts: products.map(p => ({\n      url: p.url,\n      name: p.name,\n      price: p.price,\n      details: p.details || [],\n      pattern: p.pattern || '',\n      image_url: p.image_url || '',\n      rating: p.rating || '',\n      review_count: p.review_count || '',\n      scraped_at: r.scraped_at || new Date().toISOString(),\n    })),\n    totalWalmartProducts: products.length,\n    totalProducts: products.length,\n    scrapedAt: r.scraped_at || new Date().toISOString(),\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        560
+      ],
+      "id": "5eae99a3-1791-40cd-9954-6424a79d98d7",
+      "name": "Reshape Walmart"
+    }
+  ],
+  "connections": {
+    "Mistral - Competitor Analysis Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Competitor Analysis Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Retailers Returned Data?": {
+      "main": [
+        [
+          {
+            "node": "Competitor Analysis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Competitor Analysis Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Comparison Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Comparison Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1": {
+      "main": [
+        [
+          {
+            "node": "Comparison Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparison Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Pricing & Whitespace Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Pricing & Whitespace Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2": {
+      "main": [
+        [
+          {
+            "node": "Pricing & Whitespace Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pricing & Whitespace Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Supplier Identification Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supplier Identification Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3": {
+      "main": [
+        [
+          {
+            "node": "Supplier Identification Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier Identification Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Recommendations Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Recommendations Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 4": {
+      "main": [
+        [
+          {
+            "node": "Recommendations Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recommendations Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Executive Summary Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Executive Summary Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5": {
+      "main": [
+        [
+          {
+            "node": "Executive Summary Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Valid Category?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Category?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Wayfair Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Amazon Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Walmart Products",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Wayfair Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Wayfair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Amazon Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Amazon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Walmart Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Walmart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Retailer Data": {
+      "main": [
+        [
+          {
+            "node": "Compute Competitor Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Competitor Metrics": {
+      "main": [
+        [
+          {
+            "node": "All Retailers Returned Data?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executive Summary Agent": {
+      "main": [
+        [
+          {
+            "node": "Collect Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Sections": {
+      "main": [
+        [
+          {
+            "node": "Assemble HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Validate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Report": {
+      "main": [
+        [
+          {
+            "node": "Download Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Wayfair": {
+      "main": [
+        [
+          {
+            "node": "Merge Retailer Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Amazon": {
+      "main": [
+        [
+          {
+            "node": "Merge Retailer Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Reshape Walmart": {
+      "main": [
+        [
+          {
+            "node": "Merge Retailer Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "id": "WJQ0sTQIUub8sRlW",
+  "versionId": "646a18a9-81c0-447c-a2a7-e11f860e25af"
+}
