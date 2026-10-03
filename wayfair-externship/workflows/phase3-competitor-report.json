@@ -202,58 +202,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Collect Sections: gather every agent's HTML plus the computed data.\n// Node names here must match the agent node names exactly (case-sensitive).\nconst AGENTS = {\n  executive: 'Executive Summary Agent',\n  competitors: 'Competitor Analysis Agent',\n  comparison: 'Comparison Agent',\n  pricing: 'Pricing & Whitespace Agent',\n  suppliers: 'Supplier Identification Agent',\n  recommendations: 'Recommendations Agent'\n};\n\nconst sections = {};\nfor (const [key, nodeName] of Object.entries(AGENTS)) {\n  try { sections[key] = String($(nodeName).first().json.output || ''); } catch (e) { sections[key] = ''; }\n}\n\nconst data = $('Compute Competitor Metrics').first().json;\n\nreturn [{\n  json: {\n    sections,\n    metadata: {\n      category: data.category,\n      categoryKey: data.categoryKey,\n      focus: data.focus,\n      snapshot: data.snapshot,\n      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })\n    },\n    metrics: data.metrics,\n    products: data.products\n  }\n}];\n"
-      },
-      "id": "aae82e69-34ae-4d70-bf1f-80001f2b5aee",
-      "name": "Collect Sections",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4672,
-        336
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Assemble HTML Report\n// Cleans each agent section, adds code-built tables (comparison + product appendix),\n// and wraps everything in one styled, self-contained HTML page.\nvar data = $input.first().json;\nvar sections = data.sections || {};\nvar meta = data.metadata || {};\nvar metrics = data.metrics || {};\nvar products = data.products || [];\nvar R = metrics.retailers || {};\nvar RETAILERS = ['wayfair', 'amazon', 'walmart'];\n\nfunction esc(s) {\n  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction money(x) { return x == null ? 'n/a' : '$' + Number(x).toFixed(2); }\n\n// ---- 1. Strip model chatter before/after each <section> ----\nObject.keys(sections).forEach(function (k) {\n  var s = String(sections[k] || '').replace(/```html\\s*/gi, '').replace(/```\\s*/g, '').replace(/\\\\n/g, '\\n').replace(/\\\\\"/g, '\"');\n  var a = s.indexOf('<section');\n  var b = s.lastIndexOf('</section>');\n  sections[k] = (a > -1 && b > a) ? s.slice(a, b + 10) : '';\n});\n\n// ---- 2. Formatting cleanup (from the Phase 2 report): Markdown -> HTML, no italics, hashtag pills ----\nvar CATEGORY_NAMES = { area_rug: 'Area Rug', outdoor_rug: 'Outdoor Rug', hallway_runner: 'Hallway Runner', shag_rug: 'Shag Rug' };\nfunction fixText(t) {\n  t = t.replace(/(^|\\n)[ \\t]*#{1,6}[ \\t]+([^\\n]+)/g, function (m, pre, h) { return pre + '<h4>' + h.trim() + '</h4>'; });\n  t = t.replace(/\\*\\*([^*\\n]{1,200}?)\\*\\*/g, '<strong>$1</strong>');\n  t = t.replace(/__([^_\\n]{1,200}?)__/g, '<strong>$1</strong>');\n  t = t.replace(/(^|[\\s(>])\\*([^*\\s][^*\\n]{0,150}?)\\*(?=[\\s.,;:!?)<]|$)/g, '$1$2');\n  t = t.replace(/\\*\\*/g, '');\n  t = t.replace(/(?:^|\\n)((?:[ \\t]*[-\u2022*][ \\t]+[^\\n]+(?:\\n|$))+)/g, function (m, block) {\n    var items = block.split('\\n').map(function (l) { return l.replace(/^[ \\t]*[-\u2022*][ \\t]+/, '').trim(); }).filter(Boolean);\n    return '\\n<ul>' + items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul>\\n';\n  });\n  t = t.replace(/\\b(area_rug|outdoor_rug|hallway_runner|shag_rug)\\b/g, function (m) { return CATEGORY_NAMES[m] || m; });\n  t = t.replace(/(^|[\\s(>,])#([A-Za-z][A-Za-z0-9_]{1,40})\\b/g, function (m, pre, tag) {\n    if (/^[0-9a-fA-F]{3,8}$/.test(tag)) return m;\n    return pre + '<span class=\"hashtag\">#' + tag + '</span>';\n  });\n  return t;\n}\nfunction formatFix(html) {\n  var keep = [];\n  html = html.replace(/<(style|script)[\\s\\S]*?<\\/\\1>/gi, function (m) { keep.push(m); return '\\u0000' + (keep.length - 1) + '\\u0000'; });\n  var parts = html.split(/(<[^>]+>)/);\n  for (var i = 0; i < parts.length; i++) { if (parts[i] && parts[i].charAt(0) !== '<') parts[i] = fixText(parts[i]); }\n  html = parts.join('');\n  html = html.replace(/<\\/?(em|i)(\\s[^>]*)?>/gi, '');\n  return html.replace(/\\u0000(\\d+)\\u0000/g, function (m, n) { return keep[+n]; });\n}\nObject.keys(sections).forEach(function (k) { sections[k] = formatFix(sections[k]); });\n\n// ---- 3. Visible placeholder for any section an agent failed to produce ----\nvar TITLES = {\n  executive: 'Executive Summary', competitors: 'Competitor Analysis', comparison: 'Head-to-Head Comparison',\n  pricing: 'Pricing & Whitespace', suppliers: 'Supplier Identification', recommendations: 'Recommendations'\n};\nvar missingSections = [];\nObject.keys(TITLES).forEach(function (k) {\n  if (!sections[k]) {\n    missingSections.push(TITLES[k]);\n    sections[k] = '<section class=\"section-missing\"><h2>' + esc(TITLES[k]) + '</h2><p>This section was not generated in this run: the AI agent returned no usable HTML. Check the agent node in the n8n execution and rerun.</p></section>';\n  }\n});\n\n// ---- 4. Code-built comparison table (exact numbers, never AI-written) ----\nfunction row(label, fn, note) {\n  return '<tr><th scope=\"row\">' + esc(label) + (note ? '<span class=\"row-note\">' + esc(note) + '</span>' : '') + '</th>' +\n    RETAILERS.map(function (r) { return '<td' + (r === 'wayfair' ? ' class=\"us\"' : '') + '>' + fn(R[r] || {}) + '</td>'; }).join('') + '</tr>';\n}\nfunction ofN(key, name) {\n  return function (x) { return ((x[key] || {})[name] || 0) + ' of ' + (x.listings || 0); };\n}\nvar FEATURE_ROWS = ['Washable', 'Non-slip backing', 'Indoor/outdoor', 'Shag / high pile', 'Low pile / flatweave', 'Natural fiber', 'Designer collaboration'];\nvar comparisonTable =\n  '<div class=\"table-wrap\"><table class=\"data-table compare-table\"><thead><tr><th>Metric</th><th class=\"us\">Wayfair</th><th>Amazon</th><th>Walmart</th></tr></thead><tbody>' +\n  row('Listings analyzed', function (x) { return x.listings; }) +\n  row('Price range', function (x) { return money(x.priceMin) + ' to ' + money(x.priceMax); }) +\n  row('Median price', function (x) { return money(x.priceMedian); }) +\n  row('Average price', function (x) { return money(x.priceMean); }) +\n  row('Median price per sq ft', function (x) { return x.medianPricePerSqft == null ? 'n/a' : money(x.medianPricePerSqft); }, 'listings with size in title') +\n  row('Listings with size in title', function (x) { return x.listingsWithSize + ' of ' + x.listings; }) +\n  row('Average rating', function (x) { return x.avgRating == null ? 'n/a' : x.avgRating.toFixed(2); }) +\n  row('Median review count', function (x) { return x.medianReviews == null ? 'n/a' : Math.round(x.medianReviews).toLocaleString('en-US'); }) +\n  row('Total reviews', function (x) { return (x.totalReviews || 0).toLocaleString('en-US'); }) +\n  row('Listings with under 10 reviews', function (x) { return x.listingsUnder10Reviews + ' of ' + x.listings; }) +\n  FEATURE_ROWS.map(function (f) { return row(f, ofN('features', f)); }).join('') +\n  '</tbody></table></div>' +\n  '<p class=\"table-note\">Computed directly from the sampled listings. Counts, not market share.</p>';\n\nvar bandTable =\n  '<div class=\"table-wrap\"><table class=\"data-table\"><thead><tr><th>Price band</th><th class=\"us\">Wayfair</th><th>Amazon</th><th>Walmart</th></tr></thead><tbody>' +\n  ((R.wayfair && R.wayfair.priceBands) || []).map(function (b, i) {\n    return '<tr><th scope=\"row\">' + esc(b.band) + '</th>' + RETAILERS.map(function (r) {\n      var c = R[r].priceBands[i].count;\n      return '<td' + (r === 'wayfair' ? ' class=\"us\"' : '') + '>' + (c ? c : '<span class=\"zero\">0</span>') + '</td>';\n    }).join('') + '</tr>';\n  }).join('') +\n  '</tbody></table></div>';\n\nfunction injectAfterH2(html, block) {\n  var m = html.match(/<\\/h2>/i);\n  if (!m) return html.replace(/<section[^>]*>/i, function (s) { return s + block; });\n  var idx = html.indexOf(m[0]) + m[0].length;\n  return html.slice(0, idx) + block + html.slice(idx);\n}\nsections.comparison = injectAfterH2(sections.comparison, comparisonTable);\nsections.pricing = injectAfterH2(sections.pricing, '<h3>Listings by price band</h3>' + bandTable);\n\n// ---- 5. Product appendix: every listing the report is based on ----\nvar appendix =\n  '<section class=\"appendix\"><h2>Appendix: Listings Analyzed</h2>' +\n  '<p>Product IDs cited in this report (for example AZ3) refer to the rows below. Brand is inferred from the listing title.</p>' +\n  '<div class=\"table-wrap\"><table class=\"data-table product-table\"><thead><tr><th>ID</th><th>Retailer</th><th>Product</th><th>Price</th><th>Rating</th><th>Reviews</th><th>Size</th><th>Brand</th></tr></thead><tbody>' +\n  products.map(function (p) {\n    var name = esc(p.title.length > 90 ? p.title.slice(0, 87) + '...' : p.title);\n    return '<tr class=\"r-' + p.retailer + '\"><td class=\"pid\">' + esc(p.id) + '</td><td>' + esc(p.retailerLabel) + '</td>' +\n      '<td>' + (p.url ? '<a href=\"' + esc(p.url) + '\" target=\"_blank\" rel=\"noopener\">' + name + '</a>' : name) + (p.variant ? '<span class=\"variant\">' + esc(p.variant) + '</span>' : '') + '</td>' +\n      '<td>' + money(p.price) + '</td><td>' + (p.rating == null ? 'n/a' : p.rating) + '</td>' +\n      '<td>' + (p.reviews == null ? 'n/a' : Number(p.reviews).toLocaleString('en-US')) + '</td>' +\n      '<td>' + esc(p.size || '') + '</td><td>' + esc(p.brand || '') + '</td></tr>';\n  }).join('') +\n  '</tbody></table></div></section>';\n\n// ---- 6. Page shell ----\nvar CSS = [\n  ':root{--primary:#7C3AED;--primary-dark:#5B21B6;--primary-light:#A78BFA;--secondary:#1F2937;--accent:#F59E0B;--success:#10B981;--danger:#EF4444;--bg:#F9FAFB;--card:#FFFFFF;--border:#E5E7EB;--text:#1F2937;--muted:#6B7280;--us:#F5F3FF}',\n  '*{margin:0;padding:0;box-sizing:border-box}',\n  'body{font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;font-size:14px;line-height:1.6;color:var(--text);background:var(--bg)}',\n  '.report-container{max-width:1040px;margin:0 auto;padding:40px 24px}',\n  '.report-header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;padding:44px 40px;border-radius:16px;margin-bottom:28px}',\n  '.report-header h1{font-size:30px;font-weight:700;margin-bottom:6px}',\n  '.report-header .subtitle{font-size:16px;opacity:.92}',\n  '.report-header .meta{margin-top:14px;font-size:13px;opacity:.85}',\n  '.report-toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}',\n  '.report-toc a{font-size:12px;font-weight:600;color:var(--primary-dark);background:#EDE9FE;padding:6px 12px;border-radius:999px;text-decoration:none}',\n  'section{background:var(--card);border-radius:12px;padding:32px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}',\n  'section h2{font-size:22px;font-weight:600;color:var(--secondary);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--primary-light)}',\n  'section h3{font-size:16px;font-weight:600;color:var(--primary);margin:24px 0 12px}',\n  'section h4{font-size:14px;font-weight:600;color:var(--secondary);margin-bottom:6px}',\n  'p{margin-bottom:12px}ul,ol{margin-left:20px;margin-bottom:16px}li{margin-bottom:6px}',\n  'a{color:var(--primary-dark)}',\n  '.summary-hero{background:linear-gradient(135deg,var(--bg) 0%,#EDE9FE 100%);border-radius:12px;padding:24px;margin-bottom:24px}',\n  '.key-insight{border-left:4px solid var(--primary);padding-left:16px}',\n  '.key-insight .label{font-size:11px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.04em}',\n  '.key-insight p{font-size:17px;font-weight:500;margin:8px 0 0}',\n  '.retailer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}',\n  '.retailer-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px}',\n  '.retailer-card.wayfair{background:var(--us);border-color:var(--primary-light)}',\n  '.retailer-card h3{margin-top:0}',\n  '.retailer-card ul{margin-left:16px;font-size:13px}',\n  '.threat{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px}',\n  '.threat.high{background:#FEE2E2;color:#B91C1C}.threat.medium{background:#FEF3C7;color:#B45309}.threat.low{background:#D1FAE5;color:#047857}.threat.baseline{background:#EDE9FE;color:var(--primary-dark)}',\n  '.table-wrap{overflow-x:auto;margin:12px 0 8px}',\n  '.data-table{width:100%;border-collapse:collapse;font-size:13px}',\n  '.data-table th,.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}',\n  '.data-table thead th{background:var(--secondary);color:#fff;font-weight:600;font-size:12px}',\n  '.data-table thead th.us{background:var(--primary)}',\n  '.data-table td.us{background:var(--us);font-weight:600}',\n  '.data-table tbody th{font-weight:500;color:var(--secondary)}',\n  '.row-note{display:block;font-size:11px;color:var(--muted);font-weight:400}',\n  '.zero{color:var(--danger);font-weight:700}',\n  '.table-note{font-size:12px;color:var(--muted)}',\n  '.win-lose-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}',\n  '.win-lose-grid>div{border-radius:10px;padding:18px}',\n  '.wins{background:#ECFDF5;border-left:4px solid var(--success)}.gaps{background:#FEF2F2;border-left:4px solid var(--danger)}',\n  '.opportunity-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:18px;margin-bottom:14px}',\n  '.opportunity-action{font-weight:500;color:var(--secondary);margin-bottom:0}',\n  '.rec-list{display:grid;gap:14px}',\n  '.rec-item{display:flex;gap:16px;padding:20px;background:var(--bg);border-radius:10px}',\n  '.rec-number{width:32px;height:32px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}',\n  '.rec-priority{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:8px}',\n  '.rec-priority.act{background:#FEE2E2;color:#B91C1C}.rec-priority.test{background:#FEF3C7;color:#B45309}.rec-priority.watch{background:#E0E7FF;color:#3730A3}',\n  '.section-missing{border:2px dashed var(--danger);background:#FEF2F2}',\n  '.product-table td{font-size:12px}.pid{font-weight:700;white-space:nowrap}',\n  '.variant{display:block;font-size:11px;color:var(--muted)}',\n  '.r-wayfair td:first-child{border-left:3px solid var(--primary)}',\n  '.hashtag{display:inline-block;padding:1px 9px;margin:1px 2px;border-radius:999px;background:#eef3f8;color:#2b5d8a;font-size:.88em;font-weight:600;white-space:nowrap;line-height:1.6}',\n  '.report-footer{text-align:center;padding:28px;color:var(--muted);font-size:12px}',\n  '@media (max-width:768px){.retailer-grid,.win-lose-grid{grid-template-columns:1fr}.report-header{padding:28px 22px}.report-header h1{font-size:23px}section{padding:22px}}',\n  '@media print{body{background:#fff}.report-toc{display:none}section{box-shadow:none;break-inside:avoid-page}}'\n].join('\\n');\n\nvar ORDER = [\n  ['executive', 'Executive Summary'], ['competitors', 'Competitors'], ['comparison', 'Comparison'],\n  ['pricing', 'Pricing & Whitespace'], ['suppliers', 'Suppliers'], ['recommendations', 'Recommendations']\n];\nvar body = ORDER.map(function (o) {\n  return sections[o[0]].replace(/<section/i, '<section id=\"' + o[0] + '\"');\n}).join('\\n');\nvar toc = '<nav class=\"report-toc\">' + ORDER.map(function (o) { return '<a href=\"#' + o[0] + '\">' + esc(o[1]) + '</a>'; }).join('') + '<a href=\"#appendix\">Listings</a></nav>';\n\nvar counts = RETAILERS.map(function (r) { return (R[r] ? R[r].listings : 0) + ' ' + (R[r] ? R[r].label : r); }).join(', ');\nvar title = esc(meta.category) + ' Competitor Report';\nvar html = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">' +\n  '<title>' + title + '</title>' +\n  '<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">' +\n  '<style>' + CSS + '</style></head><body><div class=\"report-container\">' +\n  '<header class=\"report-header\"><h1>' + title + '</h1>' +\n  '<p class=\"subtitle\">Wayfair vs. Amazon vs. Walmart: pricing, assortment, whitespace and supplier leads</p>' +\n  '<p class=\"meta\">Generated ' + esc(meta.date) + ' | Listings analyzed: ' + esc(counts) + ' | Data snapshot: ' + esc(meta.snapshot) +\n  (meta.focus ? ' | Focus: ' + esc(meta.focus) : '') + '</p></header>' +\n  toc + '<main>' + body + appendix.replace('<section class=\"appendix\"', '<section id=\"appendix\" class=\"appendix\"') + '</main>' +\n  '<footer class=\"report-footer\"><p>Wayfair Competitor Monitoring Agent | Phase 3</p>' +\n  '<p>All figures are computed from the sampled listings above. No sales, traffic or conversion data was used.</p></footer>' +\n  '</div></body></html>';\n\nreturn [{ json: { cleanedHtml: html, missingSections: missingSections } }];\n"
-      },
-      "id": "3c83a4ba-0b0a-417e-9e08-e2252ad76894",
-      "name": "Assemble HTML Report",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4912,
-        336
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Validate Report: check every section made it in and flag content worth a human look.\nconst input = $input.first().json;\nconst html = input.cleanedHtml || '';\n\nconst required = {\n  'Executive Summary': 'id=\"executive\"',\n  'Competitor Analysis': 'id=\"competitors\"',\n  'Comparison': 'id=\"comparison\"',\n  'Pricing & Whitespace': 'id=\"pricing\"',\n  'Supplier Identification': 'id=\"suppliers\"',\n  'Recommendations': 'id=\"recommendations\"'\n};\n\nconst warnings = [];\nconst sectionsFound = Object.keys(required).filter(k => html.includes(required[k]));\nconst missing = input.missingSections || [];\nmissing.forEach(s => warnings.push('Section not generated: ' + s));\nif (!html.includes('</html>')) warnings.push('HTML may be truncated');\n\n// Visible text only (drop the <style> block and tags)\nconst text = html.replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ');\nif (/\\*\\*|```/.test(text)) warnings.push('Leftover Markdown found');\n\n// Percentages are allowed only next to a count; list them so a human can check.\nconst percents = text.match(/[^.]{0,60}\\d+(?:\\.\\d+)?\\s?%[^.]{0,40}/g) || [];\nif (percents.length) warnings.push(percents.length + ' percentage claim(s) to double-check, e.g. \"' + percents[0].replace(/^\\S*\\s+/, '').trim() + '\"');\n\nreturn [{\n  json: {\n    cleanedHtml: html,\n    validation: {\n      isValid: missing.length === 0 && html.includes('</html>'),\n      sectionsGenerated: (sectionsFound.length - missing.length) + ' of ' + Object.keys(required).length,\n      warnings\n    }\n  }\n}];\n"
-      },
-      "id": "8f68d5c1-e289-4e24-b7fa-ee626dab257a",
-      "name": "Validate Report",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        5152,
-        336
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Download Report: turn the HTML into a downloadable file and reply in chat.\nconst input = $input.first().json;\nconst html = input.cleanedHtml || '';\nconst validation = input.validation || {};\nconst category = $('Input Parser').first().json.selectedCategory || 'Rug';\n\nconst dateStr = new Date().toISOString().split('T')[0];\nconst fileName = category.toLowerCase().replace(/\\s+/g, '_') + '_competitor_report_' + dateStr + '.html';\n\nconst lines = [\n  category + ' competitor report is ready: ' + fileName,\n  'Sections generated: ' + (validation.sectionsGenerated || 'unknown') + '.',\n  'Download it from this execution: open the \"Download Report\" node, Binary tab, then Download.'\n];\nif ((validation.warnings || []).length) lines.push('Warnings: ' + validation.warnings.join(' | '));\n\nreturn [{\n  json: { output: lines.join('\\n'), fileName, validation, category, generatedAt: new Date().toISOString() },\n  binary: {\n    data: {\n      data: Buffer.from(html, 'utf8').toString('base64'),\n      mimeType: 'text/html',\n      fileName\n    }\n  }\n}];\n"
-      },
-      "id": "ed435f42-36cf-4fe9-8156-2dac102f251a",
-      "name": "Download Report",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        5392,
-        336
-      ]
-    },
-    {
-      "parameters": {
         "content": "## 1. Input\nChat message such as `area rug` (optional 2nd line `focus: washable`). Invalid category \u2192 Error Response.",
         "height": 420,
         "width": 700,
@@ -281,22 +229,6 @@
       "typeVersion": 1,
       "position": [
         752,
-        32
-      ]
-    },
-    {
-      "parameters": {
-        "content": "## 5. Report\nCollect \u2192 clean & style HTML (adds code-built comparison table + product appendix) \u2192 validate \u2192 downloadable file.",
-        "height": 708,
-        "width": 1008,
-        "color": 3
-      },
-      "id": "003f3221-8e0e-49e5-a9a6-0b6b82356d68",
-      "name": "Note: 5. Report",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        4608,
         32
       ]
     },
@@ -705,6 +637,70 @@
           "name": "OpenRouter account"
         }
       }
+    },
+    {
+      "name": "Note: Stage 6 Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4608,
+        32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1072,
+        "height": 720,
+        "content": "## STAGE 6: OUTPUT\nThe Assemble HTML node stitches all sections into a single styled report.\n\n**To get your report:** open the `Download HTML file from Here` node after the run completes and click the file in the binary output to save it.\n\nYou'll upload this file into Project 5 (Dashboard Builder) later."
+      }
+    },
+    {
+      "name": "HTML Assembler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// HTML Assembler: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "Clean AI output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Clean AI output: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "Download HTML file from Here",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5152,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Download HTML file from Here: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "See HTML output here",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        5392,
+        336
+      ],
+      "parameters": {
+        "operation": "generateHtmlTemplate",
+        "html": "<!-- See HTML output here: paste the guide's HTML template here. -->"
+      }
     }
   ],
   "connections": {
@@ -774,39 +770,6 @@
         [
           {
             "node": "Reshape Walmart Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Collect Sections": {
-      "main": [
-        [
-          {
-            "node": "Assemble HTML Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assemble HTML Report": {
-      "main": [
-        [
-          {
-            "node": "Validate Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Report": {
-      "main": [
-        [
-          {
-            "node": "Download Report",
             "type": "main",
             "index": 0
           }
@@ -1060,6 +1023,50 @@
         [
           {
             "node": "Valid Category?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier Identification Generator": {
+      "main": [
+        [
+          {
+            "node": "HTML Assembler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Assembler": {
+      "main": [
+        [
+          {
+            "node": "Clean AI output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean AI output": {
+      "main": [
+        [
+          {
+            "node": "Download HTML file from Here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download HTML file from Here": {
+      "main": [
+        [
+          {
+            "node": "See HTML output here",
             "type": "main",
             "index": 0
           }
