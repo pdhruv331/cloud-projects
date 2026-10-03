@@ -1,7 +1,7 @@
 {
   "name": "Phase 3 - Competitor Monitoring Report",
   "id": "WJQ0sTQIUub8sRlW",
-  "versionId": "967800f3-c4fd-4a93-8740-214e2e71d343",
+  "versionId": "d89f1404-03b7-4de6-8d67-c2099b64bc92",
   "nodes": [
     {
       "parameters": {
@@ -340,33 +340,39 @@
       "name": "Reshape Walmart Response"
     },
     {
+      "parameters": {
+        "content": "## STAGE 5: AI ANALYSIS & REPORT GENERATION\nSix AI agents work sequentially to write each section of the report:\n\n- **Executive Summary**: top line findings (Mistral)\n- **Amazon Analysis**: Amazon specific insights (OpenRouter free tier)\n- **Comparison**: head to head retailer comparison (Mistral)\n- **Pricing & Whitespace**: pricing gaps and opportunities (Mistral)\n- **Recommendations**: strategic next steps (Mistral)\n- **Supplier Identification**: third party suppliers worth tracking (OpenRouter free tier)\n\nEach section runs one after the other with a short pause for rate limit safety.",
+        "height": 720,
+        "width": 3104,
+        "color": 6
+      },
+      "id": "0e78d82e-5084-44d4-b51f-396d0b5af29c",
       "name": "Note: Stage 5 AI Analysis",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         1456,
         32
-      ],
-      "parameters": {
-        "content": "## STAGE 5: AI ANALYSIS & REPORT GENERATION\nSix AI agents work sequentially to write each section of the report:\n\n- **Executive Summary**: top line findings (Mistral)\n- **Amazon Analysis**: Amazon specific insights (OpenRouter free tier)\n- **Comparison**: head to head retailer comparison (Mistral)\n- **Pricing & Whitespace**: pricing gaps and opportunities (Mistral)\n- **Recommendations**: strategic next steps (Mistral)\n- **Supplier Identification**: third party suppliers worth tracking (OpenRouter free tier)\n\nEach section runs one after the other with a short pause for rate limit safety.",
-        "height": 720,
-        "width": 3104,
-        "color": 6
-      }
+      ]
     },
     {
+      "parameters": {
+        "jsCode": "// SCOPE GENERATOR - No AI, just JavaScript\n// Generates Section 2: Scope of Research\n\nconst wayfairData = $('Reshape Wayfair Response').first().json;\nconst amazonData = $('Reshape Amazon Response').first().json;\nlet walmartData = {};\ntry { walmartData = $('Reshape Walmart Response').first().json || {}; } catch(e) {}\nconst inputData = $('Input Parser').first().json;\n\nconst category = inputData.categoryDisplayName || 'Rugs';\nconst amazonProductCount = amazonData.amazonProducts?.length || amazonData.totalProducts || 0;\nconst wayfairProductCount = wayfairData.wayfair_products?.length || 0;\nconst walmartProductCount = walmartData.walmartProducts?.length || walmartData.totalProducts || 0;\n\nconst scopeHtml = `\n<section class=\"scope-section\">\n  <h2>Scope of Research</h2>\n  <div class=\"scope-grid\">\n    <div class=\"scope-card\">\n      <h4>Category Analyzed</h4>\n      <p class=\"scope-value\">${category}</p>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Competitors Reviewed</h4>\n      <ul>\n        <li><strong>Amazon</strong> - ${amazonProductCount} products analyzed</li>\n        <li><strong>Walmart</strong> - ${walmartProductCount} products analyzed</li>\n        <li><strong>Wayfair</strong> - ${wayfairProductCount} products (baseline)</li>\n      </ul>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Data Sources</h4>\n      <ul>\n        <li>Product listings & pricing</li>\n        <li>Customer reviews & ratings</li>\n        <li>Product features & specifications</li>\n      </ul>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Report Generated</h4>\n      <p class=\"scope-value\">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>\n    </div>\n  </div>\n</section>\n`;\n\nreturn [{\n  json: {\n    section: 'scope',\n    html: scopeHtml,\n    metadata: {\n      category,\n      amazonProductCount,\n      walmartProductCount,\n      wayfairProductCount,\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "86aae766-1ebb-4fd6-8054-81fbe6b00840",
       "name": "Scope Generator",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1552,
         336
-      ],
-      "parameters": {
-        "jsCode": "// SCOPE GENERATOR - No AI, just JavaScript\n// Generates Section 2: Scope of Research\n\nconst wayfairData = $('Reshape Wayfair Response').first().json;\nconst amazonData = $('Reshape Amazon Response').first().json;\nlet walmartData = {};\ntry { walmartData = $('Reshape Walmart Response').first().json || {}; } catch(e) {}\nconst inputData = $('Input Parser').first().json;\n\nconst category = inputData.categoryDisplayName || 'Rugs';\nconst amazonProductCount = amazonData.amazonProducts?.length || amazonData.totalProducts || 0;\nconst wayfairProductCount = wayfairData.wayfair_products?.length || 0;\nconst walmartProductCount = walmartData.walmartProducts?.length || walmartData.totalProducts || 0;\n\nconst scopeHtml = `\n<section class=\"scope-section\">\n  <h2>Scope of Research</h2>\n  <div class=\"scope-grid\">\n    <div class=\"scope-card\">\n      <h4>Category Analyzed</h4>\n      <p class=\"scope-value\">${category}</p>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Competitors Reviewed</h4>\n      <ul>\n        <li><strong>Amazon</strong> - ${amazonProductCount} products analyzed</li>\n        <li><strong>Walmart</strong> - ${walmartProductCount} products analyzed</li>\n        <li><strong>Wayfair</strong> - ${wayfairProductCount} products (baseline)</li>\n      </ul>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Data Sources</h4>\n      <ul>\n        <li>Product listings & pricing</li>\n        <li>Customer reviews & ratings</li>\n        <li>Product features & specifications</li>\n      </ul>\n    </div>\n    <div class=\"scope-card\">\n      <h4>Report Generated</h4>\n      <p class=\"scope-value\">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>\n    </div>\n  </div>\n</section>\n`;\n\nreturn [{\n  json: {\n    section: 'scope',\n    html: scopeHtml,\n    metadata: {\n      category,\n      amazonProductCount,\n      walmartProductCount,\n      wayfairProductCount,\n      generatedAt: new Date().toISOString()\n    }\n  }\n}];"
-      }
+      ]
     },
     {
+      "parameters": {
+        "amount": 15
+      },
+      "id": "79c199c2-991a-4161-8627-a388b422a13f",
       "name": "Wait After Scope",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
@@ -374,34 +380,26 @@
         1776,
         336
       ],
-      "parameters": {
-        "amount": 15
-      }
+      "webhookId": "eb7bddf4-aae1-4567-8090-71a624958a78"
     },
     {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.slice(0, 10), null, 2) }}\n\nAMAZON COMPETITOR DATA:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}\n\nWALMART COMPETITOR DATA:\n{{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.slice(0, 10), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a senior competitive analyst writing an Executive Summary for Wayfair's strategy team.\n\nTASK: Write a compelling Executive Summary comparing Wayfair vs Amazon and Walmart in this rug category.\n\nREQUIREMENTS:\n1. Lead with the single most important competitive insight\n2. Include 5-6 key bullet points covering:\n   - Price positioning (Wayfair vs Amazon vs Walmart)\n   - Product assortment differences across all three\n   - Rating/review comparison\n   - Key competitive advantage for Wayfair\n   - Walmart-specific opportunities or threats\n   - Main strategic opportunity\n3. Add a \"Strategic Implications\" paragraph (2-3 sentences)\n\nOUTPUT FORMAT (HTML only, no markdown):\n<section class=\"executive-summary\">\n  <h2>Executive Summary</h2>\n  <div class=\"summary-hero\">\n    <div class=\"key-insight\">\n      <span class=\"label\">Key Competitive Insight</span>\n      <p>[Single most important finding about Wayfair vs Amazon vs Walmart]</p>\n    </div>\n  </div>\n  <div class=\"summary-points\">\n    <h3>Key Findings</h3>\n    <ul>\n      <li><strong>[Topic]:</strong> [Insight]</li>\n    </ul>\n  </div>\n  <div class=\"strategic-implications\">\n    <h3>Strategic Implications</h3>\n    <p>[What this means for Wayfair's strategy]</p>\n  </div>\n</section>"
+        }
+      },
+      "id": "02753932-2c97-4e67-8c0d-2638e1970cc4",
       "name": "Executive Summary Generator",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
         1984,
         336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        },
-        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.slice(0, 10), null, 2) }}\n\nAMAZON COMPETITOR DATA:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}\n\nWALMART COMPETITOR DATA:\n{{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.slice(0, 10), null, 2) }}"
-      }
+      ]
     },
     {
-      "name": "Mistral - Executive",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        1984,
-        560
-      ],
       "parameters": {
         "model": {
           "__rl": true,
@@ -414,6 +412,14 @@
           "temperature": 0.3
         }
       },
+      "id": "1aac4406-8ff3-4c25-ba16-1c0902aa9fb1",
+      "name": "Mistral - Executive",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1984,
+        560
+      ],
       "credentials": {
         "openAiApi": {
           "id": "S1gjPjQ4bvcDXqeN",
@@ -422,31 +428,42 @@
       }
     },
     {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "53d212b6-400a-4058-92bc-6fb25cd74705",
       "name": "Wait After Executive",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2224,
+        2272,
         336
       ],
-      "parameters": {}
+      "webhookId": "8e4dad97-b618-4aee-8d94-1f82045ec522"
     },
     {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 15), null, 2) }}\n\nWALMART PRODUCTS:\n{{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.slice(0, 15), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a marketplace analyst. Analyze Amazon and Walmart competitor products.\n\n  TASK: Create a Competitor Analysis section covering BOTH Amazon AND Walmart with clickable product links.\n\n  IMPORTANT: When listing products in tables, wrap product names in anchor tags using their URL:\n  <a href=\"[product_url]\">[Product Name]</a>\n\n  INCLUDE:\n  1. Amazon Analysis:\n     - Product count, price range, avg rating\n     - Top 3 performers WITH clickable links to their URLs\n     - Common features\n  2. Walmart Analysis:\n     - Product count, price range\n     - Top 3 performers WITH clickable links to their URLs\n     - Size/color variety\n  3. Cross-Competitor Comparison\n     - Which competitor has better pricing\n     - Which has more variety\n     - Key differentiators\n\n  OUTPUT FORMAT (HTML only, no markdown):\n  <section class=\"competitor-analysis\">\n    <h2>Competitor Analysis</h2>\n\n    <div class=\"amazon-section\">\n      <h3>Amazon Overview</h3>\n      <div class=\"stats-grid\">\n        <div class=\"stat-card\">\n          <span class=\"stat-value\">[Count]</span>\n          <span class=\"stat-label\">Products Analyzed</span>\n        </div>\n        <div class=\"stat-card\">\n          <span class=\"stat-value\">[Min] - [Max]</span>\n          <span class=\"stat-label\">Price Range</span>\n        </div>\n        <div class=\"stat-card\">\n          <span class=\"stat-value\">[Avg]/5</span>\n          <span class=\"stat-label\">Avg Rating</span>\n        </div>\n      </div>\n      <div class=\"top-performers\">\n        <h4>Top Amazon Products</h4>\n        <table class=\"data-table\">\n          <thead><tr><th>Product</th><th>Price</th><th>Rating</th></tr></thead>\n          <tbody>\n            <tr>\n              <td><a href=\"[full_amazon_url]\">[Product Name - shortened if needed]</a></td>\n              <td>[Price]</td>\n              <td>[Rating] ([Review Count])</td>\n            </tr>\n            <tr>\n              <td><a href=\"[full_amazon_url]\">[Product Name]</a></td>\n              <td>[Price]</td>\n              <td>[Rating] ([Review Count])</td>\n            </tr>\n            <tr>\n              <td><a href=\"[full_amazon_url]\">[Product Name]</a></td>\n              <td>[Price]</td>\n              <td>[Rating] ([Review Count])</td>\n            </tr>\n          </tbody>\n        </table>\n      </div>\n      <div class=\"common-features\">\n        <h4>Common Features</h4>\n        <ul>\n          <li>[Feature 1]</li>\n          <li>[Feature 2]</li>\n          <li>[Feature 3]</li>\n          <li>[Feature 4]</li>\n        </ul>\n      </div>\n    </div>\n\n    <div class=\"walmart-section\">\n      <h3>Walmart Overview</h3>\n      <div class=\"stats-grid\">\n        <div class=\"stat-card\">\n          <span class=\"stat-value\">[Count]</span>\n          <span class=\"stat-label\">Products Analyzed</span>\n        </div>\n        <div class=\"stat-card\">\n          <span class=\"stat-value\">[Min] - [Max]</span>\n          <span class=\"stat-label\">Price Range</span>\n        </div>\n      </div>\n      <div class=\"top-performers\">\n        <h4>Top Walmart Products</h4>\n        <table class=\"data-table\">\n          <thead><tr><th>Product</th><th>Price</th><th>Sizes Available</th></tr></thead>\n          <tbody>\n            <tr>\n              <td><a href=\"[full_walmart_url]\">[Product Name]</a></td>\n              <td>[Price]</td>\n              <td>[Size options or count]</td>\n            </tr>\n            <tr>\n              <td><a href=\"[full_walmart_url]\">[Product Name]</a></td>\n              <td>[Price]</td>\n              <td>[Size options]</td>\n            </tr>\n            <tr>\n              <td><a href=\"[full_walmart_url]\">[Product Name]</a></td>\n              <td>[Price]</td>\n              <td>[Size options]</td>\n            </tr>\n          </tbody>\n        </table>\n      </div>\n      <div class=\"variety\">\n        <h4>Size/Color Variety</h4>\n        <ul>\n          <li><strong>Sizes:</strong> [Range description]</li>\n          <li><strong>Colors:</strong> [Count and types]</li>\n          <li><strong>Brands:</strong> [List main brands]</li>\n        </ul>\n      </div>\n    </div>\n\n    <div class=\"cross-comparison\">\n      <h3>Cross-Competitor Insights</h3>\n      <ul>\n        <li><strong>Pricing:</strong> [Which competitor wins on price and why]</li>\n        <li><strong>Variety:</strong> [Which has better selection]</li>\n        <li><strong>Key Differentiators:</strong> [What makes each unique]</li>\n        <li><strong>Target Audience:</strong> [Who each competitor serves best]</li>\n      </ul>\n    </div>\n  </section>\n\n  CRITICAL:\n  - Extract actual URLs from the product data and use them in href attributes\n  - Use the full URL (https://www.amazon.com/... or https://www.walmart.com/...)\n  - If URL is not available, just use the product name without a link\n  - Truncate long product names to ~50 characters for readability"
+        }
+      },
+      "id": "2966ecdd-dde4-4c74-b94d-3e65d94e7f1e",
       "name": "Amazon Analysis Generator",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
         2432,
         336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        }
-      }
+      ]
     },
     {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "id": "b3f033cf-c195-4ed6-8fc6-027b06010844",
       "name": "OpenRouter - Amazon",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
@@ -454,10 +471,6 @@
         2432,
         560
       ],
-      "parameters": {
-        "model": "openrouter/free",
-        "options": {}
-      },
       "credentials": {
         "openRouterApi": {
           "id": "HS2qIFvFSIvBbfw7",
@@ -466,31 +479,50 @@
       }
     },
     {
+      "parameters": {
+        "amount": 25
+      },
+      "id": "bbda6e97-121e-4f55-88de-a4953e9e08ae",
       "name": "Wait After Amazon",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2672,
+        2704,
         336
       ],
-      "parameters": {}
+      "webhookId": "0a55a355-016a-4914-8ae5-8b301b9e37c5"
     },
     {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS:\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.slice(0, 10), null, 2) }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.slice(0, 10), null, 2) }}\n\nWALMART PRODUCTS:\n{{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.slice(0, 10), null, 2) }}",
+        "options": {
+          "systemMessage": "You are a competitive intelligence analyst. Create a side-by-side comparison of Wayfair vs Amazon vs Walmart.\n\n  TASK: Create a comprehensive three-way Competitor Comparison table with clear winner indicators.\n\n  COMPARE THESE ATTRIBUTES:\n  1. Price Positioning (avg, min, max for each)\n  2. Product Variety/Count\n  3. Rating Distribution\n  4. Feature Highlights\n  5. Size/Color Options\n  6. Shipping/Delivery\n\n  OUTPUT FORMAT (HTML only, no markdown):\n  <section class=\"competitor-comparison\">\n    <h2>Side-by-Side Comparison</h2>\n    <table class=\"comparison-table\">\n      <thead>\n        <tr>\n          <th>Attribute</th>\n          <th>Wayfair</th>\n          <th>Amazon</th>\n          <th>Walmart</th>\n          <th>Winner</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td><strong>Price Positioning</strong></td>\n          <td>\n            Avg: $[X]<br>\n            Min: $[X]<br>\n            Max: $[X]\n          </td>\n          <td>\n            Avg: $[X]<br>\n            Min: $[X]<br>\n            Max: $[X]\n          </td>\n          <td>\n            Avg: $[X]<br>\n            Min: $[X]<br>\n            Max: $[X]\n          </td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner Name]</span></td>\n        </tr>\n        <tr>\n          <td><strong>Product Variety</strong></td>\n          <td>\n            [X] products<br>\n            Brands: [list]<br>\n            Styles: [list]\n          </td>\n          <td>\n            [X] products<br>\n            Brands: [list]<br>\n            Styles: [list]\n          </td>\n          <td>\n            [X] products<br>\n            Brands: [list]<br>\n            Styles: [list]\n          </td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner Name]</span></td>\n        </tr>\n        <tr>\n          <td><strong>Avg Rating</strong></td>\n          <td>[X] / 5 stars<br>([X] - [X] reviews)</td>\n          <td>[X] / 5 stars<br>([X] - [X] reviews)</td>\n          <td>[Data if available or \"N/A\"]</td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner Name]</span></td>\n        </tr>\n        <tr>\n          <td><strong>Key Features</strong></td>\n          <td>\n            <ul>\n              <li>[Feature 1]</li>\n              <li>[Feature 2]</li>\n              <li>[Feature 3]</li>\n            </ul>\n          </td>\n          <td>\n            <ul>\n              <li>[Feature 1]</li>\n              <li>[Feature 2]</li>\n              <li>[Feature 3]</li>\n            </ul>\n          </td>\n          <td>\n            <ul>\n              <li>[Feature 1]</li>\n              <li>[Feature 2]</li>\n              <li>[Feature 3]</li>\n            </ul>\n          </td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner or \"Tie\"]</span></td>\n        </tr>\n        <tr>\n          <td><strong>Size Options</strong></td>\n          <td>[Description of size range]</td>\n          <td>[Description of size range]</td>\n          <td>[Description of size range]</td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner Name]</span></td>\n        </tr>\n        <tr>\n          <td><strong>Shipping</strong></td>\n          <td>[Shipping info]</td>\n          <td>[Shipping info]</td>\n          <td>[Shipping info]</td>\n          <td class=\"winner\"><span class=\"winner-badge [winner-class]\">[Winner Name]</span></td>\n        </tr>\n      </tbody>\n    </table>\n\n    <div class=\"comparison-insights\">\n      <h3>Key Takeaways</h3>\n      <ul>\n        <li><strong>Price Leader:</strong> [Who wins on price and why]</li>\n        <li><strong>Variety & Selection:</strong> [Who has the best assortment]</li>\n        <li><strong>Customer Confidence:</strong> [Rating/review insights]</li>\n        <li><strong>Practical Features:</strong> [Who offers best features]</li>\n        <li><strong>Shipping Convenience:</strong> [Delivery comparison]</li>\n        <li><strong>Overall:</strong> [Summary of who wins in what scenarios]</li>\n      </ul>\n    </div>\n  </section>\n\n  <style>\n  .winner-badge {\n    display: inline-block;\n    padding: 4px 12px;\n    border-radius: 20px;\n    font-weight: 600;\n    font-size: 0.85rem;\n  }\n  .winner-wayfair { background: #d1fae5; color: #065f46; }\n  .winner-amazon { background: #fef3c7; color: #92400e; }\n  .winner-walmart { background: #dbeafe; color: #1e40af; }\n  .winner-tie { background: #f3f4f6; color: #374151; }\n  </style>\n\n  WINNER CLASS RULES:\n  - If Wayfair wins: use class=\"winner-wayfair\"\n  - If Amazon wins: use class=\"winner-amazon\"\n  - If Walmart wins: use class=\"winner-walmart\"\n  - If Tie: use class=\"winner-tie\"\n\n  IMPORTANT:\n  - Calculate actual averages from the product data\n  - Be objective - pick winner based on data, not bias\n  - Use \"Tie\" when competitors are roughly equal\n  - Include the inline style block at the end for winner badges"
+        }
+      },
+      "id": "be05c966-e311-41ca-a622-3e0d8d24ea62",
       "name": "Comparison Generator",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
         2880,
         336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        }
-      }
+      ]
     },
     {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "6b74ab8d-50b5-464f-8165-b3ff76dd9489",
       "name": "Mistral - Comparison",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
@@ -498,6 +530,45 @@
         2880,
         560
       ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "id": "ea06f966-e596-49ff-abfd-2ce22c4d13ec",
+      "name": "Wait After Comparison",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3168,
+        336
+      ],
+      "webhookId": "0b31b564-2e5d-4e84-b750-1d46dc829f14"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nWAYFAIR PRODUCTS (prices):\n{{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.map(p => ({ title: p.title, price: p.price, list_price: p.list_price, discount: p.discount_percent })).slice(0, 15), null, 2) }}\n\nAMAZON PRODUCTS (prices):\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.map(p => ({ name: p.name, price: p.price })).slice(0, 15), null, 2) }}\n\nWALMART PRODUCTS (prices):\n{{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.map(p => ({ name: p.name, price: p.price, original",
+        "options": {
+          "systemMessage": "You are a pricing strategist. Analyze pricing across Wayfair, Amazon, and Walmart.\n\n  TASK: Create Pricing Insights & Whitespace Analysis with visual elements.\n\n  ANALYZE:\n  1. Price band distribution per competitor (budget <$100, mid $100-300, premium $300+)\n  2. Count products in each band for each retailer\n  3. Discount strategies across retailers\n  4. Price gaps and underserved segments\n  5. Whitespace opportunities (prioritized as High/Medium/Low)\n\n  OUTPUT FORMAT (HTML only, no markdown):\n  <section class=\"pricing-whitespace\">\n    <h2>Pricing Insights</h2>\n\n    <div class=\"price-bands\">\n      <h3>Price Distribution by Retailer</h3>\n      <div class=\"band-chart\">\n        <div class=\"band budget\">\n          <span>Budget (&lt;$100)</span>\n          <span>W: [X] | A: [Y] | Wm: [Z]</span>\n        </div>\n        <div class=\"band mid\">\n          <span>Mid ($100-$300)</span>\n          <span>W: [X] | A: [Y] | Wm: [Z]</span>\n        </div>\n        <div class=\"band premium\">\n          <span>Premium ($300+)</span>\n          <span>W: [X] | A: [Y] | Wm: [Z]</span>\n        </div>\n      </div>\n      <div class=\"insights\">\n        <p><strong>Analysis:</strong> [2-3 sentences about price distribution patterns]</p>\n      </div>\n    </div>\n\n    <div class=\"discount-strategies\">\n      <h3>Discount Strategies</h3>\n      <div class=\"discount-chart\">\n        <div class=\"discount-tier\"><span>No Discount</span><span>[X]</span></div>\n        <div class=\"discount-tier\"><span>1-30% Off</span><span>[X]</span></div>\n        <div class=\"discount-tier\"><span>31-50% Off</span><span>[X]</span></div>\n        <div class=\"discount-tier\"><span>50%+ Off</span><span>[X]</span></div>\n      </div>\n      <div class=\"insights\">\n        <p><strong>Key Insight:</strong> [Observation about discount strategies by retailer]</p>\n      </div>\n    </div>\n\n    <h2>Whitespace Analysis</h2>\n\n    <div class=\"whitespace-opportunities\">\n      <h3>Market Gaps & Opportunities</h3>\n      <div class=\"opportunity-cards\">\n        <div class=\"opportunity-card high-priority\">\n          <h4>\ud83c\udfaf [High Priority Opportunity Title]</h4>\n          <p>[Description of the gap - what price range, what's missing, why it matters]</p>\n          <span class=\"priority\">High Priority</span>\n          <div class=\"rationale\"><p><strong>Why?</strong> [Brief justification]</p></div>\n        </div>\n        <div class=\"opportunity-card high-priority\">\n          <h4>\ud83c\udfaf [Another High Priority Opportunity]</h4>\n          <p>[Description]</p>\n          <span class=\"priority\">High Priority</span>\n          <div class=\"rationale\"><p><strong>Why?</strong> [Brief justification]</p></div>\n        </div>\n        <div class=\"opportunity-card medium-priority\">\n          <h4>\u26a1 [Medium Priority Opportunity]</h4>\n          <p>[Description]</p>\n          <span class=\"priority\">Medium Priority</span>\n        </div>\n        <div class=\"opportunity-card low-priority\">\n          <h4>\ud83d\udcca [Low Priority Opportunity]</h4>\n          <p>[Description]</p>\n          <span class=\"priority\">Low Priority</span>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"price-gaps\">\n      <h3>Price Gap Heatmap</h3>\n      <div class=\"heatmap\">\n        <div class=\"gap hot\"><span>$0-$50</span><span>\ud83d\udd25 High Competition (Amazon/Walmart)</span></div>\n        <div class=\"gap warm\"><span>$50-$100</span><span>\u26a0\ufe0f Moderate Competition</span></div>\n        <div class=\"gap moderate\"><span>$100-$200</span><span>\u26a0\ufe0f Discount-Heavy</span></div>\n        <div class=\"gap cool\"><span>$200-$400</span><span>\ud83d\udfe2 Opportunity Zone</span></div>\n        <div class=\"gap open\"><span>$400+</span><span>\ud83d\udfe2\ud83d\udfe2 Wide Open</span></div>\n      </div>\n    </div>\n  </section>\n\n  IMPORTANT:\n  - Use actual product counts from the data for each price band\n  - Include 2-3 high priority, 1-2 medium priority, and 1 low priority opportunities\n  - Make the heatmap reflect actual competition levels based on the data\n  - Use emojis as shown (\ud83c\udfaf, \u26a1, \ud83d\udcca, \ud83d\udd25, \u26a0\ufe0f, \ud83d\udfe2)\n  - W = Wayfair, A = Amazon, Wm = Walmart in the band chart"
+        }
+      },
+      "id": "17ee96cf-a175-4f83-86a1-f24e6d5034fd",
+      "name": "Pricing & Whitespace Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3328,
+        336
+      ]
+    },
+    {
       "parameters": {
         "model": {
           "__rl": true,
@@ -510,39 +581,7 @@
           "temperature": 0.3
         }
       },
-      "credentials": {
-        "openAiApi": {
-          "id": "S1gjPjQ4bvcDXqeN",
-          "name": "Mistral (OpenAI-compatible)"
-        }
-      }
-    },
-    {
-      "name": "Wait After Comparison",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        3120,
-        336
-      ],
-      "parameters": {}
-    },
-    {
-      "name": "Pricing & Whitespace Generator",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        3328,
-        336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        }
-      }
-    },
-    {
+      "id": "3e331c0a-2a56-49ba-9d21-84ef42676a71",
       "name": "Mistral - Pricing & Whitespace",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
@@ -550,6 +589,45 @@
         3328,
         560
       ],
+      "credentials": {
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 25
+      },
+      "id": "5b03554b-7758-4acd-a583-782fbb23a778",
+      "name": "Wait After Pricing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3600,
+        336
+      ],
+      "webhookId": "1784e2d9-0aff-4610-a276-6274328e9ffb"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nEXECUTIVE SUMMARY:\n{{ $('Executive Summary Generator').first().json.output }}\n\nAMAZON ANALYSIS:\n{{ $('Amazon Analysis Generator').first().json.output }}\n\nCOMPARISON:\n{{ $('Comparison Generator').first().json.output }}\n\nPRICING & WHITESPACE:\n{{ $('Pricing & Whitespace Generator').first().json.output }}",
+        "options": {
+          "systemMessage": "You are a senior strategy consultant. Based on all the analysis of Wayfair vs Amazon vs Walmart, provide actionable recommendations.\n\n  TASK: Create Strategic Recommendations with clear prioritization and visual hierarchy.\n\n  PROVIDE:\n  1. 2-3 Quick Wins (immediate actions, high impact)\n  2. 3-4 Strategic Initiatives (longer-term plays)\n  3. Each recommendation needs: title, description, priority level, expected impact\n  4. At least one recommendation should specifically address Walmart competition\n  5. At least one recommendation should specifically address Amazon competition\n\n  OUTPUT FORMAT (HTML only, no markdown):\n  <section class=\"recommendations\">\n    <h2>Strategic Recommendations</h2>\n\n    <div class=\"quick-wins\">\n      <h3>\ud83d\ude80 Quick Wins (Immediate Actions)</h3>\n      <div class=\"rec-cards\">\n        <div class=\"rec-card priority-high\">\n          <h4>1. [Recommendation Title]</h4>\n          <p>[Detailed description - 2-3 sentences explaining what to do and why. Mention which competitor this addresses (Amazon/Walmart/Both).]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">High Priority</span>\n            <span class=\"impact\">Impact: High</span>\n          </div>\n        </div>\n        <div class=\"rec-card priority-high\">\n          <h4>2. [Recommendation Title]</h4>\n          <p>[Detailed description addressing specific competitor threat or opportunity.]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">High Priority</span>\n            <span class=\"impact\">Impact: High</span>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"strategic-plays\">\n      <h3>\ud83d\udcca Strategic Initiatives</h3>\n      <div class=\"rec-cards\">\n        <div class=\"rec-card priority-high\">\n          <h4>3. [Strategic Initiative Title]</h4>\n          <p>[Longer description - explain the strategy, which competitor gap it exploits, and expected outcomes.]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">High Priority</span>\n            <span class=\"impact\">Impact: High</span>\n          </div>\n        </div>\n        <div class=\"rec-card priority-medium\">\n          <h4>4. [Strategic Initiative Title]</h4>\n          <p>[Description of medium-priority initiative.]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">Medium Priority</span>\n            <span class=\"impact\">Impact: Medium</span>\n          </div>\n        </div>\n        <div class=\"rec-card priority-medium\">\n          <h4>5. [Strategic Initiative Title]</h4>\n          <p>[Description - could be about differentiation, new product lines, or market positioning.]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">Medium Priority</span>\n            <span class=\"impact\">Impact: Medium</span>\n          </div>\n        </div>\n        <div class=\"rec-card priority-low\">\n          <h4>6. [Lower Priority Initiative]</h4>\n          <p>[Description of a nice-to-have or longer-term exploration.]</p>\n          <div class=\"rec-meta\">\n            <span class=\"priority\">Low Priority</span>\n            <span class=\"impact\">Impact: Medium</span>\n          </div>\n        </div>\n      </div>\n    </div>\n  </section>\n\n  PRIORITY GUIDELINES:\n  - priority-high: Urgent, addresses immediate competitive threat, high ROI\n  - priority-medium: Important but not urgent, builds long-term advantage\n  - priority-low: Nice to have, exploratory, or requires more research\n\n  CONTENT GUIDELINES:\n  - Be specific - reference actual findings from the analysis\n  - Mention specific competitors by name (Amazon, Walmart)\n  - Reference specific price points or product gaps identified\n  - Include actionable next steps, not vague suggestions\n  - Each recommendation should tie back to data from earlier sections\n\n  EXAMPLES OF GOOD RECOMMENDATIONS:\n  - \"Launch a $80-$150 'Value Plus' line to compete with Walmart's large-format rugs\"\n  - \"Expand machine-washable selection to counter Amazon's Soalmost success\"\n  - \"Create 'Designer Picks' collections to differentiate from Amazon's Ophanie dominance\"\n"
+        }
+      },
+      "id": "30bca256-17e0-480c-a8ed-63b543630ef5",
+      "name": "Recommendations Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3760,
+        336
+      ]
+    },
+    {
       "parameters": {
         "model": {
           "__rl": true,
@@ -562,39 +640,7 @@
           "temperature": 0.3
         }
       },
-      "credentials": {
-        "openAiApi": {
-          "id": "S1gjPjQ4bvcDXqeN",
-          "name": "Mistral (OpenAI-compatible)"
-        }
-      }
-    },
-    {
-      "name": "Wait After Pricing",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        3568,
-        336
-      ],
-      "parameters": {}
-    },
-    {
-      "name": "Recommendations Generator",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        3776,
-        336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        }
-      }
-    },
-    {
+      "id": "5908ed5c-b038-4d71-b961-b1a8d795034f",
       "name": "Mistral - Recommendations",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
@@ -602,18 +648,6 @@
         3776,
         560
       ],
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "ministral-14b-2512",
-          "cachedResultName": "ministral-14b-2512"
-        },
-        "responsesApiEnabled": false,
-        "options": {
-          "temperature": 0.3
-        }
-      },
       "credentials": {
         "openAiApi": {
           "id": "S1gjPjQ4bvcDXqeN",
@@ -622,31 +656,42 @@
       }
     },
     {
+      "parameters": {
+        "amount": 25
+      },
+      "id": "14ac98dc-7248-4ff4-8ee0-a022a37fa4f2",
       "name": "Wait",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        4016,
+        4064,
         336
       ],
-      "parameters": {}
+      "webhookId": "6cee2376-fa91-483f-bf23-da9205db116b"
     },
     {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CATEGORY: {{ $('Input Parser').first().json.categoryDisplayName }}\n\nAMAZON PRODUCTS:\n{{ JSON.stringify($('Reshape Amazon Response').first().json.amazonProducts?.map(p => ({ name: p.name, brand: p.brand, url: p.url, price: p.price })).slice(0, 15), null, 2) }}\n\n  WALMART PRODUCTS:\n  {{ JSON.stringify($('Reshape Walmart Response').first().json.walmartProducts?.map(p => ({ name: p.name, brand: p.brand, url: p.url, price: p.price })).slice(0, 15), null, 2) }}\n\n  WAYFAIR PRODUCTS:\n  {{ JSON.stringify($('Reshape Wayfair Response').first().json.wayfair_products?.map(p => ({ title: p.title, manufacturer: p.manufacturer })).slice(0, 15), null, 2) }}\n",
+        "options": {
+          "systemMessage": "You are a sourcing analyst specializing in home goods supply chain. Identify suppliers and brands from competitor product data.\n\n  TASK: Create a Supplier Identification & Sourcing Opportunities section.\n\n  ANALYZE THE DATA TO:\n  1. Extract all unique brand/supplier names from Amazon and Walmart products\n  2. Identify which brands are NOT currently on Wayfair\n  3. Note what each supplier is known for (style, price point, features)\n  4. Find sourcing opportunities for Wayfair\n\n  OUTPUT FORMAT (HTML only, no markdown):\n  <section class=\"supplier-identification\">\n    <h2>Supplier Identification & Sourcing Opportunities</h2>\n\n    <div class=\"suppliers-observed\">\n      <h3>Major Suppliers / Brands Observed</h3>\n      <table class=\"data-table\">\n        <thead>\n          <tr>\n            <th>Supplier / Brand</th>\n            <th>Platform</th>\n            <th>Known For</th>\n            <th>Price Range</th>\n            <th>Website</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td><strong>[Brand Name]</strong></td>\n            <td>[Amazon/Walmart/Both]</td>\n            <td>[Brief description - style, features, target market]</td>\n            <td>$[X] - $[Y]</td>\n            <td><a href=\"[url_if_known]\">[Website or \"Amazon Storefront\"]</a></td>\n          </tr>\n          <!-- Repeat for each major brand found (aim for 5-10 brands) -->\n        </tbody>\n      </table>\n    </div>\n\n    <div class=\"sourcing-opportunities\">\n      <h3>Sourcing Opportunities</h3>\n      <div class=\"opportunity-cards\">\n        <div class=\"opportunity-card high-priority\">\n          <h4>\ud83c\udfaf Brands Not Currently on Wayfair</h4>\n          <p>The following suppliers are active on Amazon/Walmart but appear absent from Wayfair's catalog:</p>\n          <ul>\n            <li><strong>[Brand]</strong> - [Why they'd be valuable: style, price point, reviews]</li>\n            <li><strong>[Brand]</strong> - [Why they'd be valuable]</li>\n            <li><strong>[Brand]</strong> - [Why they'd be valuable]</li>\n          </ul>\n          <span class=\"priority\">High Priority</span>\n        </div>\n\n        <div class=\"opportunity-card medium-priority\">\n          <h4>\u26a1 Style Gaps to Fill</h4>\n          <p>These suppliers offer styles or products that could fill gaps in Wayfair's assortment:</p>\n          <ul>\n            <li><strong>[Brand]</strong> specializes in [style] which Wayfair lacks depth in</li>\n            <li><strong>[Brand]</strong> offers [feature/style] at competitive price points</li>\n          </ul>\n          <span class=\"priority\">Medium Priority</span>\n        </div>\n\n        <div class=\"opportunity-card medium-priority\">\n          <h4>\ud83c\udfed Private Label / Exclusive Candidates</h4>\n          <p>These suppliers may be suitable for private label partnerships or exclusive arrangements:</p>\n          <ul>\n            <li><strong>[Brand]</strong> - [Why: quality, price point, style alignment]</li>\n            <li><strong>[Brand]</strong> - [Why: manufacturing capability, unique features]</li>\n          </ul>\n          <span class=\"priority\">Medium Priority</span>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"supplier-insights\">\n      <h3>Key Supplier Insights</h3>\n      <div class=\"insights\">\n        <ul>\n          <li><strong>Amazon Dominance:</strong> [Which brand dominates Amazon in this category and why]</li>\n          <li><strong>Walmart Focus:</strong> [What type of suppliers Walmart features]</li>\n          <li><strong>Price Point Gaps:</strong> [Where supplier opportunities exist by price]</li>\n          <li><strong>Emerging Brands:</strong> [Any newer brands showing strong reviews/traction]</li>\n        </ul>\n      </div>\n    </div>\n  </section>\n\n  BRAND IDENTIFICATION TIPS:\n  - Look for brand names in product titles (usually first word or after \"by\")\n  - Common Amazon rug brands: Ophanie, Rugs.com, Safavieh, nuLOOM, Unique Loom, Gorilla Grip, Lahome\n  - Common Walmart rug brands: Mainstays, Better Homes & Gardens, SAFAVIEH, Pentantan, My Texas House\n  - If brand website unknown, link to their Amazon/Walmart storefront or write \"Search Required\"\n\n  IMPORTANT:\n  - Only include brands you can actually identify from the product data\n  - Compare against Wayfair's manufacturer list to identify gaps\n  - Be realistic about private label candidates (smaller brands, quality products)\n  - Include at least 5 brands in the main table"
+        }
+      },
+      "id": "b632f444-8940-425e-8f9e-4032edba280c",
       "name": "Supplier Identification Generator",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
         4224,
         336
-      ],
-      "parameters": {
-        "promptType": "define",
-        "options": {
-          "systemMessage": ""
-        }
-      }
+      ]
     },
     {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "id": "4f7db0a1-1089-4679-9302-516a2dafec91",
       "name": "OpenRouter - Suppliers",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
@@ -654,10 +699,6 @@
         4224,
         560
       ],
-      "parameters": {
-        "model": "openrouter/free",
-        "options": {}
-      },
       "credentials": {
         "openRouterApi": {
           "id": "HS2qIFvFSIvBbfw7",
@@ -672,17 +713,6 @@
         [
           {
             "node": "Input Parser",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Input Parser": {
-      "main": [
-        [
-          {
-            "node": "Valid Category?",
             "type": "main",
             "index": 0
           }
@@ -750,100 +780,34 @@
         ]
       ]
     },
-    "Reshape Wayfair Response": {
+    "Collect Sections": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Assemble HTML Report",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Reshape Amazon Response": {
+    "Assemble HTML Report": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Validate Report",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
     },
-    "Reshape Walmart Response": {
+    "Validate Report": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Download Report",
             "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Mistral - Executive": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Executive Summary Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter - Amazon": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Amazon Analysis Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Comparison": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Comparison Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Pricing & Whitespace": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Pricing & Whitespace Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Recommendations": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Recommendations Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter - Suppliers": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Supplier Identification Generator",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -992,33 +956,110 @@
         ]
       ]
     },
-    "Collect Sections": {
+    "Mistral - Executive": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Executive Summary Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Amazon": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Amazon Analysis Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Comparison": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Comparison Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Pricing & Whitespace": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Pricing & Whitespace Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Recommendations": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Recommendations Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Suppliers": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supplier Identification Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Wayfair Response": {
       "main": [
         [
           {
-            "node": "Assemble HTML Report",
+            "node": "Merge",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Assemble HTML Report": {
+    "Reshape Amazon Response": {
       "main": [
         [
           {
-            "node": "Validate Report",
+            "node": "Merge",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
     },
-    "Validate Report": {
+    "Reshape Walmart Response": {
       "main": [
         [
           {
-            "node": "Download Report",
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Input Parser": {
+      "main": [
+        [
+          {
+            "node": "Valid Category?",
             "type": "main",
             "index": 0
           }
