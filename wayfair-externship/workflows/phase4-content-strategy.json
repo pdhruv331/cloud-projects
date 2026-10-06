@@ -1,0 +1,185 @@
+{
+  "_note": "PARTIAL snapshot of the provided workflow (version e60b1892): contains the form, Extract Files, AI Content and Mistral nodes exactly as provided. Parse Content, Build HTML, Download, Preview and Notes are omitted; restore them from n8n version history (version e60b1892) if needed.",
+  "name": "Project 4 - Content Strategy Generator v3 (Premium)",
+  "id": "iC3xoxy9SsgsdK9m",
+  "versionId": "e60b1892-bef8-4c1f-9bd6-9fd9fbbc02a1",
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "connections": {
+    "Upload Form": {
+      "main": [
+        [
+          {
+            "node": "Extract Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Files": {
+      "main": [
+        [
+          {
+            "node": "AI Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Content",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Content": {
+      "main": [
+        [
+          {
+            "node": "Parse Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Content": {
+      "main": [
+        [
+          {
+            "node": "Build HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build HTML": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "path": "93cbc336-768f-4492-a0f2-7c1532a7f82b",
+        "formTitle": "Project 4: Upload Your Reports",
+        "formDescription": "Upload your Project 2 (Market Analysis) and Project 3 (Competitor Analysis) HTML reports to generate a comprehensive content strategy.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product Category",
+              "placeholder": "e.g., Area Rug, Table Lamp, Throw Pillow",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Focus Area",
+              "placeholder": "e.g., Natural & Sustainable, Modern Minimalist"
+            },
+            {
+              "fieldLabel": "P2 Market Analysis Report",
+              "fieldType": "file",
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "P3 Competitor Analysis Report",
+              "fieldType": "file",
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "90113ccf-eafb-4204-97b5-36528ccaf9aa",
+      "name": "Upload Form",
+      "webhookId": "93cbc336-768f-4492-a0f2-7c1532a7f82b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst form = items[0].json;\n\nconst category = form['Product Category'] || form.category || 'Area Rug';\nconst focus = form['Focus Area'] || form.focus || '';\n\nlet p2Content = '';\nif (form['P2 Market Analysis Report']) {\n  const p2Data = form['P2 Market Analysis Report'];\n  if (typeof p2Data === 'string') {\n    p2Content = p2Data;\n  } else if (p2Data.data) {\n    p2Content = Buffer.from(p2Data.data, 'base64').toString('utf8');\n  }\n}\n\nlet p3Content = '';\nif (form['P3 Competitor Analysis Report']) {\n  const p3Data = form['P3 Competitor Analysis Report'];\n  if (typeof p3Data === 'string') {\n    p3Content = p3Data;\n  } else if (p3Data.data) {\n    p3Content = Buffer.from(p3Data.data, 'base64').toString('utf8');\n  }\n}\n\nconst stripHtml = (html) => {\n  return html\n    .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n};\n\nconst p2Text = stripHtml(p2Content).slice(0, 15000);\nconst p3Text = stripHtml(p3Content).slice(0, 15000);\n\nreturn [{\n  json: {\n    category,\n    focus,\n    p2_content: p2Text,\n    p3_content: p3Text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "6466c031-3007-457a-87fd-c2a8b321c20c",
+      "name": "Extract Files"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a senior content strategist for Wayfair. Create a COMPREHENSIVE content strategy report based on these market reports.\n\nCategory: {{ $json.category }}\nFocus Area: {{ $json.focus }}\n\n=== PROJECT 2 (Market Analysis) ===\n{{ $json.p2_content }}\n\n=== PROJECT 3 (Competitor Analysis) ===\n{{ $json.p3_content }}\n\n=== REQUIREMENTS ===\nYou MUST extract SPECIFIC DATA POINTS from the reports (percentages, price ranges, growth numbers) and reference them throughout.\n\nRespond with this EXACT JSON structure:\n{\n  \"key_metrics\": [\n    {\"value\": \"28%\", \"label\": \"YoY Growth\", \"source\": \"P2\"},\n    {\"value\": \"$127-$156\", \"label\": \"Sweet Spot\", \"source\": \"P2\"},\n    {\"value\": \"47%\", \"label\": \"Sustainable Searches\", \"source\": \"P2\"},\n    {\"value\": \"3\", \"label\": \"Competitor Gaps\", \"source\": \"P3\"}\n  ],\n  \"data_foundation\": {\n    \"p2_insights\": [\"Specific finding 1 from P2\", \"Specific finding 2\", \"Specific finding 3\", \"Specific finding 4\"],\n    \"p3_insights\": [\"Specific finding 1 from P3\", \"Specific finding 2\", \"Specific finding 3\", \"Specific finding 4\"]\n  },\n  \"executive_summary\": \"2-3 paragraph strategic overview connecting market opportunity to content strategy\",\n  \"content_ideas\": [\n    {\"type\": \"Blog Post\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"References X% growth...\", \"seo_keywords\": [\"kw1\", \"kw2\"]},\n    {\"type\": \"Instagram Carousel\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"...\", \"seo_keywords\": []},\n    {\"type\": \"Video\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"...\", \"seo_keywords\": []},\n    {\"type\": \"Pinterest Pin\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"...\", \"seo_keywords\": []},\n    {\"type\": \"Buying Guide\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"...\", \"seo_keywords\": []},\n    {\"type\": \"Email Series\", \"title\": \"...\", \"description\": \"...\", \"data_connection\": \"...\", \"seo_keywords\": []}\n  ],\n  \"social_captions\": {\n    \"instagram\": [{\"caption\": \"...\", \"hashtags\": [\"#tag1\"]}, {\"caption\": \"...\", \"hashtags\": []}],\n    \"pinterest\": [{\"title\": \"...\", \"description\": \"...\"}],\n    \"facebook\": [{\"post\": \"...\"}],\n    \"tiktok\": [{\"hook\": \"...\", \"script\": \"...\"}]\n  },\n  \"campaigns\": [\n    {\n      \"name\": \"Campaign Name 1\",\n      \"tagline\": \"Catchy tagline\",\n      \"description\": \"2-3 sentence overview\",\n      \"details\": {\n        \"content_pillars\": \"...\",\n        \"format\": \"...\",\n        \"competitive_angle\": \"...\",\n        \"seo_opportunity\": \"...\"\n      }\n    },\n    {\n      \"name\": \"Campaign Name 2\",\n      \"tagline\": \"...\",\n      \"description\": \"...\",\n      \"details\": {\"content_pillars\": \"...\", \"format\": \"...\", \"competitive_angle\": \"...\", \"timing\": \"...\"}\n    },\n    {\n      \"name\": \"Campaign Name 3\",\n      \"tagline\": \"...\",\n      \"description\": \"...\",\n      \"details\": {\"content_pillars\": \"...\", \"format\": \"...\", \"cross_sell\": \"...\", \"micro_segment\": \"...\"}\n    }\n  ],\n  \"email_subjects\": [\n    {\"icon\": \"🌿\", \"subject\": \"The rug trend that's up X% this year\", \"open_rate\": \"high\"},\n    {\"icon\": \"✨\", \"subject\": \"...\", \"open_rate\": \"high\"},\n    {\"icon\": \"🏠\", \"subject\": \"...\", \"open_rate\": \"medium\"},\n    {\"icon\": \"🌊\", \"subject\": \"...\", \"open_rate\": \"high\"},\n    {\"icon\": \"💡\", \"subject\": \"...\", \"open_rate\": \"high\"},\n    {\"icon\": \"🎯\", \"subject\": \"...\", \"open_rate\": \"medium\"}\n  ],\n  \"competitive_angles\": [\n    {\n      \"title\": \"Design Guidance vs. Product Walls\",\n      \"competitor_gap\": \"Amazon shows thousands of rugs with minimal styling content...\",\n      \"wayfair_opportunity\": \"Lead with 'how to choose' content...\"\n    },\n    {\n      \"title\": \"Premium Quality at Accessible Prices\",\n      \"competitor_gap\": \"...\",\n      \"wayfair_opportunity\": \"...\"\n    },\n    {\n      \"title\": \"Answering Customer Questions\",\n      \"competitor_gap\": \"...\",\n      \"wayfair_opportunity\": \"...\"\n    }\n  ],\n  \"content_priorities\": [\n    {\"priority\": 1, \"title\": \"First priority action\", \"rationale\": \"Why this is #1...\"},\n    {\"priority\": 2, \"title\": \"Second priority\", \"rationale\": \"...\"},\n    {\"priority\": 3, \"title\": \"Third priority\", \"rationale\": \"...\"},\n    {\"priority\": 4, \"title\": \"Fourth priority\", \"rationale\": \"...\"}\n  ]\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        0
+      ],
+      "id": "2bab9243-e99a-4ecc-8341-a01e19737693",
+      "name": "AI Content"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "maxTokens": 6000,
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        480,
+        224
+      ],
+      "id": "c1377b56-0888-4be9-bc2e-984cfba969b2",
+      "name": "Mistral",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "53jqew9g8xDaqb5p",
+          "name": "Mistral Cloud account"
+        }
+      }
+    }
+  ]
+}
