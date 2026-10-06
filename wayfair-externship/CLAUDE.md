@@ -5,7 +5,7 @@ Full context: @docs/project-brief.md. Read it before any Phase 3+ work.
 ## Current state
 - Phases 1–2 are done: workflow `mhvhOPSqwWtvrrm0` ("My workflow"). Reference only, **never edit it**.
 - Phase 3 is done: workflow `WJQ0sTQIUub8sRlW` ("Phase 3 - Competitor Monitoring Report"), built to match the Wayfair guide's screenshots. Export in `workflows/phase3-competitor-report.json`.
-- Phase 4 (AI Insights & Content Agent) is next. Wait for Dhruv's Phase 4 materials before designing.
+- Phase 4 (AI Insights & Content Agent) is in progress: workflow  ("Project 4 - Content Strategy Generator v3 (Premium)"), a form that takes the P2 and P3 HTML reports. Export in . Enhancement chosen: Wayfair voice system message + evidence rules + audience/season inputs (no images).
 - Dhruv follows the guide's screenshots and pastes the guide's code himself. Build nodes with the guide's exact names so pasted `$('...')` references work, then check his pastes for wrong node/field names.
 
 ## Rules
