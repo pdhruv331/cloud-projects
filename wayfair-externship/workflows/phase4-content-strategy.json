@@ -1,5 +1,5 @@
 {
-  "_note": "PARTIAL snapshot of the provided workflow (version e60b1892): contains the form, Extract Files, AI Content and Mistral nodes exactly as provided. Parse Content, Build HTML, Download, Preview and Notes are omitted; restore them from n8n version history (version e60b1892) if needed.",
+  "_note": "PARTIAL snapshot of the provided workflow (version e60b1892): contains the form, Extract Files, AI Content and Mistral nodes as provided, with the Mistral node swapped to OpenAI Chat Model + ministral-14b-2512. Parse Content, Build HTML, Download, Preview and Notes are omitted; restore them from n8n version history (version e60b1892) if needed.",
   "name": "Project 4 - Content Strategy Generator v3 (Premium)",
   "id": "iC3xoxy9SsgsdK9m",
   "versionId": "e60b1892-bef8-4c1f-9bd6-9fd9fbbc02a1",
@@ -160,24 +160,29 @@
     },
     {
       "parameters": {
-        "model": "mistral-large-latest",
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "ministral-14b-2512",
+          "cachedResultName": "ministral-14b-2512"
+        },
+        "responsesApiEnabled": false,
         "options": {
           "maxTokens": 6000,
           "temperature": 0.5
         }
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
       "position": [
         480,
         224
       ],
-      "id": "c1377b56-0888-4be9-bc2e-984cfba969b2",
       "name": "Mistral",
       "credentials": {
-        "mistralCloudApi": {
-          "id": "53jqew9g8xDaqb5p",
-          "name": "Mistral Cloud account"
+        "openAiApi": {
+          "id": "S1gjPjQ4bvcDXqeN",
+          "name": "Mistral (OpenAI-compatible)"
         }
       }
     }
