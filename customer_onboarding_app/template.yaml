@@ -1,4 +1,9 @@
 Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Tracing: Active
+
 Resources:
   CustomerApplicationBucket:
     Type: AWS::S3::Bucket
@@ -100,6 +105,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: UnzipLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -122,6 +137,11 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
+              - Sid: UnzipLambdaS3List
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam"
         - PolicyName: UnzipLambdaStepFunctionsPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -145,6 +165,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: WriteDynamoLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -166,6 +196,11 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
+              - Sid: WriteDynamoS3List
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam"
         - PolicyName: WriteDynamoLambdaDynamoDBPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -189,6 +224,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: CompareFacesLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -210,6 +255,20 @@ Resources:
                 Action:
                   - rekognition:CompareFaces
                 Resource: "*"
+        - PolicyName: CompareFacesLambdaS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareFacesS3GetImages
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam/unzipped/*"
+              - Sid: CompareFacesS3List
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam"
         - PolicyName: CompareFacesLambdaDynamoDBPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -242,6 +301,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: CompareDetailsLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -263,6 +332,20 @@ Resources:
                 Action:
                   - textract:AnalyzeID
                 Resource: "*"
+        - PolicyName: CompareDetailsLambdaS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareDetailsS3GetImages
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam/unzipped/*"
+              - Sid: CompareDetailsS3List
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam"
         - PolicyName: CompareDetailsLambdaDynamoDBPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -296,6 +379,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: SendToQueueLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -384,6 +477,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: ValidateLicenseLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -588,6 +691,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
+        - PolicyName: XRayWritePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: XRayWriteTraces
+                Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
         - PolicyName: SubmitLicenseSQSReadPolicy
           PolicyDocument:
             Version: '2012-10-17'

@@ -2,6 +2,7 @@ import json
 import logging
 import zipfile
 import os
+from urllib.parse import unquote_plus
 import boto3
 
 logger = logging.getLogger()
@@ -19,7 +20,8 @@ STATE_MACHINE_ARN = os.environ['STATE_MACHINE_ARN']
 
 def lambda_handler(event, context):
     bucket = event['Records'][0]['s3']['bucket']['name']
-    key = event['Records'][0]['s3']['object']['key']
+    # S3 event keys are URL-encoded (spaces arrive as '+'), so decode before using the key
+    key = unquote_plus(event['Records'][0]['s3']['object']['key'])
 
     logger.info(f"Unzipping s3://{bucket}/{key}")
 
@@ -51,7 +53,7 @@ def lambda_handler(event, context):
     # as the input for the WriteDynamo state
     sfn.start_execution(
         stateMachineArn=STATE_MACHINE_ARN,
-        name=app_uuid,  # unique execution name — reuses the app_uuid
+        name=f"{app_uuid}-{context.aws_request_id}",  # execution names must be unique, so re-uploads still start
         input=json.dumps({
             "app_uuid": app_uuid,
             "bucket": bucket

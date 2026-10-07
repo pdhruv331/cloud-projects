@@ -60,7 +60,7 @@ flowchart LR
 
 | Step | Component | What it does |
 |---|---|---|
-| 1 | **Unzip Lambda** | Triggered by an S3 upload to `zipped/`. Extracts the zip, writes the files to `unzipped/`, then starts the state machine with the `app_uuid` and bucket name as input (named after the `app_uuid`, so each application gets one execution) |
+| 1 | **Unzip Lambda** | Triggered by an S3 upload to `zipped/`. Extracts the zip, writes the files to `unzipped/`, then starts the state machine with the `app_uuid` and bucket name as input (the execution name is the `app_uuid` plus the request ID, so re-uploading the same application still starts a new run) |
 | 2 | **WriteDynamo** | Reads the details CSV and writes the customer record to DynamoDB |
 | 3a | **CompareFaces** | Rekognition compares the selfie to the license photo (80% similarity threshold) and saves `LICENSE_SELFIE_MATCH` |
 | 3b | **CompareDetails** | Textract `AnalyzeID` reads the license, compares eight fields (name, date of birth, address parts, document number) against the CSV, and saves `LICENSE_DETAILS_MATCH` |
@@ -81,7 +81,7 @@ Steps 3a and 3b run in parallel inside a Step Functions `Parallel` state. The Un
 
 ## Observability
 
-- **AWS X-Ray:** active tracing is enabled on the state machine, and its role is allowed to send trace data, so each execution shows up with per-state timing and errors in the X-Ray console.
+- **AWS X-Ray:** active tracing is enabled on the state machine and on every Lambda function (set once under `Globals` in the template), and each role has an inline policy allowing it to send trace data. One upload produces a single trace map that follows the request from the S3-triggered Unzip function into the state machine, through each Lambda step, and across the SQS queue into SubmitLicense, with per-step timing and errors.
 - **Amazon CloudWatch Logs:** every Lambda function has a role permitted to write to its own log group, used for function-level detail alongside the traces.
 
 ## Infrastructure as Code
@@ -136,7 +136,29 @@ Before moving to SAM, I built the first version by hand in the console:
 
 ## Screenshots
 
-_TODO_
+### Step Functions state machine
+
+The deployed `CustomerOnboardingStateMachine`: WriteDynamo, then face and detail checks in parallel, then SendToQueue.
+
+![Step Functions state machine graph](./images/01-state-machine-graph.png)
+
+### Successful execution
+
+A full run for one application. Every state succeeded, and the selected `WriteDynamo` state shows the `app_uuid` and bucket passed in by the Unzip function and the customer record it passes on to the next steps.
+
+![Successful state machine execution](./images/02-execution-success.png)
+
+### X-Ray trace map
+
+One upload traced end to end: the client upload triggers Unzip, Unzip starts the state machine, the state machine fans out to its Lambda steps (the face and detail checks run in parallel), and SendToQueue hands off through SQS to SubmitLicense.
+
+![X-Ray trace map](./images/04-xray-trace-map.png)
+
+### Verification results in DynamoDB
+
+Each application's record holds the outcome of every check. `8d247914` passed the face match, the details match, and the third-party license validation. `9c358026` failed the face match, so no license validation was recorded for it.
+
+![DynamoDB items showing verification results](./images/06-dynamodb-items.png)
 
 ## Tech / Services Used
 

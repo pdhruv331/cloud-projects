@@ -40,7 +40,8 @@ def lambda_handler(event, context):
         print(f"API response: {api_result}")
 
         # Determine whether the validation passed
-        is_valid = api_result.get('result', False)
+        # The mock API returns a bare true/false; also accept {"result": ...}
+        is_valid = api_result.get('result', False) if isinstance(api_result, dict) else bool(api_result)
 
         # Update the DynamoDB table with the LICENSE_VALIDATION result
         table = dynamodb.Table(TABLE)
