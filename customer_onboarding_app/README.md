@@ -2,18 +2,18 @@
 
 A serverless customer onboarding application on AWS. A new customer submits their application details, a selfie, and a photo of their driver's license; the backend verifies their identity automatically, without a person reviewing the happy path. I designed and built the event-driven backend myself.
 
-## Progress
+## Status
 
 | Phase | Description | Status |
 |---|---|---|
-| Document ingestion + identity verification | S3 upload → Document Lambda → DynamoDB / SNS, with Rekognition and Textract (built manually, then migrated to SAM) | In progress |
-| License submission via SQS | SQS queue + License Submit Lambda that hands the license to the third-party validation API | Planned |
-| Split into async functions | Break the Document Lambda into four single-purpose Lambda functions | Planned |
-| Step Functions + X-Ray | Orchestrate the functions with a state machine and add distributed tracing | Planned |
+| Document ingestion + identity verification | S3 upload, unzip, DynamoDB record, Rekognition face match, Textract detail match | Done |
+| License submission via SQS | SQS queue with dead-letter queue, plus a Lambda that calls the third-party validation API | Done |
+| Split into single-purpose functions | The original single Lambda broken into small functions, each with its own role | Done |
+| Step Functions + X-Ray | State machine orchestrating the validation steps, with X-Ray tracing | Done |
 
 ## Overview
 
-The app lets a customer submit application data, a selfie, and a driver's license photo through a client (web or mobile). The backend verifies the customer's identity by matching the selfie against the license photo and extracting/validating the license details, then records the outcome — all without a human in the loop for the happy path.
+The app lets a customer submit application data, a selfie, and a driver's license photo through a client (web or mobile). The backend verifies the customer's identity by matching the selfie against the license photo and checking the license details against what the customer typed in, then validates the license number with a third-party service and records every outcome in DynamoDB.
 
 ## Use Cases
 
@@ -23,54 +23,94 @@ The app lets a customer submit application data, a selfie, and a driver's licens
 
 ## Architecture
 
-![Architecture diagram](./images/architecture-diagram.png)
+![Original architecture diagram](./images/architecture-diagram.png)
 
-1. **Client / Mobile client** — customer submits app data, a selfie, and a license photo
-2. **S3 document bucket** — uploads land here
-3. **Document Lambda function** — triggered by the S3 upload; orchestrates verification
-4. **DynamoDB Table** — stores document/application state
-5. **SNS topic** — notified of table changes
-6. **Amazon Rekognition** — compares the selfie to the license photo for identity match
-7. **Amazon Textract** — extracts text/fields from the license image
-8. **SQS queue** — Document Lambda hands off license verification work
-9. **License Lambda function** — triggered by the SQS queue
-10. **Amazon API Gateway → Validate license Lambda function (third party)** — License Lambda calls out to a third-party service to validate the license, then writes the result back to the Table
-11. **Document Lambda function IAM role** — scopes the Document Lambda's permissions to only what it needs (S3, Rekognition, Textract, DynamoDB, SNS, SQS)
+_The diagram above is the original single-function design. The current design splits that function up and orchestrates it with Step Functions, shown below._
 
-## What I Did
+```mermaid
+flowchart LR
+    C["Customer upload<br/>(zip: details CSV, selfie, license photo)"] --> S3[("S3 bucket<br/>zipped/")]
+    S3 -->|ObjectCreated| U["Unzip Lambda"]
+    U --> S3U[("S3 bucket<br/>unzipped/")]
 
-- Created the S3 document bucket, `customer-application-data-5911`, to receive customer app data, selfies, and license photo uploads
-- Added a bucket policy denying access to the bucket and its objects over plain HTTP, requiring HTTPS (`aws:SecureTransport`)
-- Created the Lambda execution role `customer-onboarding-lambda-role`, with a trust policy allowing `sts:AssumeRole` (for the Lambda service)
-- Created the permissions policy `document_lambda_policy`, granting the Document Lambda `s3:GetObject` and `s3:PutObject` on the application bucket, `dynamodb:PutItem` and `dynamodb:UpdateItem` on the DynamoDB table, and `sns:Publish` on the SNS topic
-- Added a bucket policy statement denying `s3:GetObject` to everyone except the Lambda role using `ArnNotEquals`
-- Created the `CustomerMetadataTable` DynamoDB table with `APP_UUID` as the partition key, provisioned with 2 RCUs and 2 WCUs, with auto scaling configured to scale between 2 and 20 at 70% utilization
-- Created the `ApplicationNotifications` SNS topic encrypted with the default `alias/aws/sns` KMS key, with an email subscription
-- Wrote `DocumentLambda.py` — triggered by S3 `ObjectCreated:Put` on the `zipped/` prefix; downloads and extracts the zip to `/tmp`, uploads extracted files to the `unzipped/` prefix, parses the customer details CSV, and writes the record to DynamoDB
+    subgraph SM["Step Functions state machine (X-Ray tracing on)"]
+        direction LR
+        W["WriteDynamo"] --> F["CompareFaces<br/>(Rekognition)"]
+        W --> D["CompareDetails<br/>(Textract)"]
+        F --> Q["SendToQueue"]
+        D --> Q
+    end
+
+    U -->|"StartExecution<br/>(app_uuid, bucket)"| W
+    W --> DB[("DynamoDB")]
+    F --> DB
+    D --> DB
+    F -. mismatch .-> SNS["SNS email alert"]
+    D -. mismatch .-> SNS
+    Q --> SQS[["SQS LicenseQueue"]]
+    SQS -. "after 5 failed receives" .-> DLQ[["Dead-letter queue"]]
+    SQS --> L["SubmitLicense Lambda"]
+    L --> API["API Gateway<br/>POST /license"]
+    API --> V["ValidateLicense Lambda<br/>(mock third party)"]
+    L --> DB
+    L -. invalid .-> SNS
+```
+
+### How a submission flows
+
+| Step | Component | What it does |
+|---|---|---|
+| 1 | **Unzip Lambda** | Triggered by an S3 upload to `zipped/`. Extracts the zip, writes the files to `unzipped/`, then starts the state machine with the `app_uuid` and bucket name as input (named after the `app_uuid`, so each application gets one execution) |
+| 2 | **WriteDynamo** | Reads the details CSV and writes the customer record to DynamoDB |
+| 3a | **CompareFaces** | Rekognition compares the selfie to the license photo (80% similarity threshold) and saves `LICENSE_SELFIE_MATCH` |
+| 3b | **CompareDetails** | Textract `AnalyzeID` reads the license, compares eight fields (name, date of birth, address parts, document number) against the CSV, and saves `LICENSE_DETAILS_MATCH` |
+| 4 | **SendToQueue** | Runs only if both checks passed. Puts the license number on the SQS queue |
+| 5 | **SubmitLicense Lambda** | Triggered by the queue (batch size 1). Calls the third-party validation API through API Gateway, saves `LICENSE_VALIDATION`, and sends an SNS alert if validation fails |
+
+Steps 3a and 3b run in parallel inside a Step Functions `Parallel` state. The Unzip function's role is allowed to call `states:StartExecution` on this one state machine and nothing else.
+
+**When something fails:** a face or detail mismatch writes `false` to the matching DynamoDB field, publishes an SNS email alert, and raises an error so the execution fails and nothing is sent for license validation. If the license call itself keeps failing, the SQS message is retried and moves to a dead-letter queue after 5 receives, so it is kept for inspection instead of being lost.
+
+## Design Decisions
+
+- **Single-purpose functions.** The original design was one Lambda that did everything. Splitting it gave each function its own narrowly scoped IAM role, timeout, and logs, and means a failure points at one step instead of the whole pipeline.
+- **Step Functions for the validation workflow.** The order of steps, the parallel branch, and the "only continue if both checks pass" rule live in one state machine definition instead of being spread across function code.
+- **SQS in front of the third-party call.** The license check is the one step that depends on a service outside my control. The queue keeps a slow or failing provider from blocking identity verification, absorbs bursts, and the dead-letter queue catches messages that keep failing.
+- **Least privilege, no managed policies.** Every function and the state machine have their own inline-policy role, scoped to the resources they use.
+- **Everything as code.** One SAM template defines the whole stack.
+
+## Observability
+
+- **AWS X-Ray:** active tracing is enabled on the state machine, and its role is allowed to send trace data, so each execution shows up with per-state timing and errors in the X-Ray console.
+- **Amazon CloudWatch Logs:** every Lambda function has a role permitted to write to its own log group, used for function-level detail alongside the traces.
 
 ## Infrastructure as Code
 
-Migrated the pipeline to AWS SAM (`template.yaml`): document ingestion, identity verification (Rekognition and Textract), and the mock third-party license-validation API. The SQS queue and License Submit Lambda are not built yet (see Next Steps below). Covers:
+The whole pipeline is defined in `template.yaml` (AWS SAM):
 
-- **S3 bucket** (`CustomerApplicationBucket`) with HTTP deny bucket policy
-- **DynamoDB table** (`CustomerMetadataTable`) with provisioned capacity and Application Auto Scaling for read and write capacity (target 70%, min 2, max 20)
-- **SNS topic** (`ApplicationNotifications`) with KMS encryption and email subscription
-- **IAM role** (`DocumentLambdaRole`) with inline policies for CloudWatch Logs, S3, DynamoDB, SNS, Rekognition (`CompareFaces`), and Textract (`AnalyzeID`) — no AWS managed policies
-- **Lambda function** (`DocumentLambdaFunction`) using Python 3.13 runtime, 20s timeout, S3 event trigger on `zipped/` prefix, and `DYNAMODB_TABLE_NAME` and `TOPIC` environment variables. After saving the customer record, it compares the selfie to the license photo with Rekognition, extracts the license fields with Textract, checks them against the submitted details, records both results in DynamoDB, and publishes an SNS alert on any mismatch
-- **Validate License Lambda + HTTP API** (`ValidateLicenseLambdaFunction`, `ValidateLicenseApi`) — a mock third-party license-validation service behind an API Gateway `POST /license` route, with its own least-privilege role
-- **Lambda invoke permission** allowing S3 to invoke the Lambda (implicit, created by SAM from the `Events` declaration)
+- **S3 bucket** (`CustomerApplicationBucket`) with a bucket policy that denies plain HTTP
+- **DynamoDB table** (`CustomerMetadataTable`) with provisioned capacity and Application Auto Scaling for reads and writes (target 70%, min 2, max 20)
+- **SNS topic** (`ApplicationNotifications`) with KMS encryption and an email subscription
+- **Lambda functions** (Python 3.13): `UnzipLambda`, `WriteDynamoLambda`, `CompareFacesLambda`, `CompareDetailsLambda`, `SendToQueueLambda`, `SubmitLicenseLambda`, and `ValidateLicenseLambdaFunction`, each with its own IAM role
+- **Step Functions state machine** (`CustomerOnboardingStateMachine`) with X-Ray tracing and its own role
+- **SQS queue** (`LicenseQueue`, 300s visibility timeout) and **dead-letter queue** (`LicenseDeadLetterQueue`, redrive after 5 receives)
+- **HTTP API** (`ValidateLicenseApi`) with a `POST /license` route to the mock third-party validation function
+- **Triggers:** S3 `ObjectCreated` on `zipped/` triggers Unzip, Unzip starts the state machine, and the SQS queue triggers SubmitLicense
 
 ### Project Structure
 
 ```
 customer_onboarding_app/
-├── template.yaml               # SAM template
-├── samconfig.toml              # SAM deployment config
-├── document_lambda/
-│   ├── DocumentLambdaSam.py    # Lambda function code
-│   └── requirements.txt
-├── validation_lambda/
-│   └── ValidateLicenseLambdaFunction.py  # Mock license-validation function
+├── template.yaml                 # SAM template for the whole stack
+├── samconfig.toml                # SAM deployment config
+├── unzip_lambda/                 # Extracts the upload
+├── write_dynamo_lambda/          # Writes the customer record
+├── compare_faces_lambda/         # Rekognition selfie vs. license photo
+├── compare_details_lambda/       # Textract license vs. submitted details
+├── send_to_queue_lambda/         # Queues the license for third-party validation
+├── submit_license_lambda/        # Calls the validation API, saves the result
+├── validation_lambda/            # Mock third-party license validation
+├── document_lambda/              # Original single-function version (no longer deployed)
 └── images/
     └── architecture-diagram.png
 ```
@@ -81,115 +121,38 @@ customer_onboarding_app/
 sam build && sam deploy
 ```
 
-## Next Steps (Planned)
+## Initial Manual Build
 
-The remaining work moves the app from one large Lambda function to a set of small, event-driven microservices, then adds orchestration and observability. Nothing in this section is built yet; it will be updated with details and screenshots as each part is completed.
+Before moving to SAM, I built the first version by hand in the console:
 
-### From one large function to microservices
-
-**Before:** a single Document Lambda does everything: unzips the upload, parses the customer details, writes to DynamoDB, calls Rekognition and Textract, and hands off to SQS. It needs one broad IAM role, one timeout covers all the work, and a failure at any point affects the whole pipeline.
-
-**After:** four single-purpose functions, each with its own narrowly scoped IAM role, timeout, and retry behavior, coordinated by a Step Functions state machine. X-Ray traces show where time is spent and where errors occur across the whole workflow.
-
-```mermaid
-flowchart LR
-    subgraph Before
-        direction TB
-        A[Document Lambda<br/>unzip + parse + DynamoDB +<br/>Rekognition + Textract + SQS]
-    end
-    subgraph After
-        direction TB
-        B[Step Functions] --> C[Unzip]
-        B --> D[Write to DynamoDB]
-        B --> E[Compare Faces]
-        B --> F[Compare Details]
-    end
-    Before --> After
-```
-
-**Trade-off:** more moving parts to deploy, permission, and monitor. That is why Step Functions (to keep the workflow in one place) and X-Ray (to see across the functions) are part of this design rather than an afterthought.
-
-### License submission via SQS
-
-- Create an SQS queue that holds licenses waiting for third-party validation, so license checks are decoupled from document processing (with a dead-letter queue for messages that repeatedly fail)
-- Create the **License Submit Lambda** with the SQS queue as its event source and its own least-privilege execution role
-- Write its code to read each queued message and call the third-party validation API (API Gateway → Validate License Lambda), then record the result in DynamoDB
-- Update the Document Lambda to send the extracted license data to the queue instead of handling validation itself
-
-### Refactor into async, single-purpose functions
-
-Break the Document Lambda into four smaller functions that can run asynchronously:
-
-| Function | Responsibility |
-|---|---|
-| **Unzip** | Download the uploaded zip from S3, extract it, and write the files to the `unzipped/` prefix |
-| **Write to DynamoDB** | Parse the customer details and store the application record |
-| **Compare Faces** | Use Rekognition to match the selfie against the license photo |
-| **Compare Details** | Use Textract to extract the license fields and compare them to the application data |
-
-Why: each function gets its own IAM role, timeout, retries, and scaling, and a failure is isolated to one step instead of the whole pipeline.
-
-### Orchestrate with AWS Step Functions
-
-- Build a **Step Functions state machine** that runs the four functions in order, passes each step's output to the next, and handles failures with retries and catch paths
-- Replace the current Lambda-to-Lambda hand-offs with the state machine as the single place that defines the workflow
-- Define the state machine in `template.yaml` (`AWS::Serverless::StateMachine`) so the workflow is deployed as code alongside everything else
-
-```mermaid
-flowchart LR
-    S3[S3 upload] --> SM{{Step Functions state machine}}
-    SM --> U[Unzip]
-    U --> W[Write to DynamoDB]
-    W --> F[Compare Faces]
-    F --> D[Compare Details]
-    D --> Q[SQS queue]
-    Q --> L[License Submit Lambda]
-    L --> API[API Gateway → Validate License]
-```
-
-The exact ordering (and whether any steps can run in parallel) will be finalized while building it.
-
-### Observability with AWS X-Ray
-
-- Enable X-Ray **active tracing** on the state machine to see each execution and how long every state takes
-- Enable X-Ray tracing on the Lambda functions, and grant their execution roles permission to send trace data (custom roles do not get this automatically)
-- Use the **service map** and individual traces to find slow steps and trace errors across Step Functions, Lambda, and downstream AWS services
-- Keep using CloudWatch Logs alongside traces for function-level detail
-
-### Infrastructure as Code follow-ups
-
-- Extend `template.yaml` with the SQS queue and dead-letter queue, the new Lambda functions and roles, the state machine, and tracing settings
-- Update the project structure below as new function folders are added
-- Fill in the Screenshots, Files in This Directory, and Why This Project sections once the build is complete
+- Created the S3 document bucket to receive customer app data, selfies, and license photo uploads
+- Added a bucket policy denying access over plain HTTP, requiring HTTPS (`aws:SecureTransport`)
+- Created the Lambda execution role with a trust policy allowing `sts:AssumeRole` for the Lambda service
+- Created a permissions policy granting the Lambda `s3:GetObject` and `s3:PutObject` on the bucket, `dynamodb:PutItem` and `dynamodb:UpdateItem` on the table, and `sns:Publish` on the topic
+- Added a bucket policy statement denying `s3:GetObject` to everyone except the Lambda role using `ArnNotEquals`
+- Created the `CustomerMetadataTable` DynamoDB table with `APP_UUID` as the partition key and auto scaling between 2 and 20 at 70% utilization
+- Created the `ApplicationNotifications` SNS topic, encrypted with the default `alias/aws/sns` KMS key, with an email subscription
+- Wrote the first single-function version: triggered by S3 `ObjectCreated:Put` on `zipped/`, it extracted the zip, uploaded the files to `unzipped/`, parsed the details CSV, and wrote the record to DynamoDB
 
 ## Screenshots
-
-_TODO — planned screenshots to add:_
-
-- [ ] SQS queue and License Submit Lambda configuration
-- [ ] The four Lambda functions after the refactor
-- [ ] Step Functions state machine graph and a successful execution
-- [ ] X-Ray service map and an example trace
-
-## Files in This Directory
 
 _TODO_
 
 ## Tech / Services Used
 
 - **Amazon S3** — document bucket for uploaded app data, selfies, and license photos
-- **AWS Lambda** — Document Lambda function and License Lambda function
-- **Amazon DynamoDB** — table storing onboarding/document state
-- **Amazon SNS** — topic notified of table changes
-- **Amazon SQS** — queue decoupling document processing from license verification
-- **Amazon Rekognition** — selfie-to-license face verification
-- **Amazon Textract** — text extraction from license images
-- **Amazon API Gateway** — entry point to the third-party license validation service
-- **AWS IAM** — least-privilege role for the Document Lambda function
-- **AWS SAM** — infrastructure as code for the stack
-- **AWS Step Functions** _(planned)_ — orchestrates the split-out Lambda functions as a single workflow
-- **AWS X-Ray** _(planned)_ — distributed tracing across the state machine and Lambda functions
-- **Amazon CloudWatch** — function logs, used alongside X-Ray traces
+- **AWS Lambda** — one function per step of the pipeline
+- **AWS Step Functions** — orchestrates the validation workflow, including the parallel face and detail checks
+- **Amazon DynamoDB** — table storing each applicant's record and verification results
+- **Amazon SNS** — email alerts when a check fails
+- **Amazon SQS** — queue (with dead-letter queue) decoupling identity checks from third-party license validation
+- **Amazon Rekognition** — selfie-to-license face comparison
+- **Amazon Textract** — extracts fields from the license image
+- **Amazon API Gateway** — HTTP API in front of the mock license validation service
+- **AWS X-Ray** — tracing for state machine executions
+- **Amazon CloudWatch** — Lambda function logs
+- **AWS IAM** — separate least-privilege role per function and for the state machine
+- **AWS SAM** — infrastructure as code for the whole stack
 
 ## Why This Project
 

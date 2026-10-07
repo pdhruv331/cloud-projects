@@ -1,3 +1,4 @@
+import json
 import logging
 import zipfile
 import os
@@ -11,6 +12,9 @@ unzipped_s3_prefix = "unzipped/"
 region = os.environ.get('AWS_REGION', 'us-east-1')
 
 s3 = boto3.client('s3', region_name=region)
+sfn = boto3.client('stepfunctions', region_name=region)
+
+STATE_MACHINE_ARN = os.environ['STATE_MACHINE_ARN']
 
 
 def lambda_handler(event, context):
@@ -41,5 +45,18 @@ def lambda_handler(event, context):
     # Derive app_uuid from the zip filename (e.g. "8d247914.zip" -> "8d247914")
     app_uuid = os.path.basename(key).replace(".zip", "")
 
-    logger.info(f"Unzip complete. app_uuid={app_uuid}")
+    logger.info(f"Unzip complete. app_uuid={app_uuid}. Starting state machine.")
+
+    # Start the Step Functions state machine, passing app_uuid and bucket
+    # as the input for the WriteDynamo state
+    sfn.start_execution(
+        stateMachineArn=STATE_MACHINE_ARN,
+        name=app_uuid,  # unique execution name — reuses the app_uuid
+        input=json.dumps({
+            "app_uuid": app_uuid,
+            "bucket": bucket
+        })
+    )
+
+    logger.info(f"State machine execution started for app_uuid={app_uuid}")
     return {"app_uuid": app_uuid, "bucket": bucket}

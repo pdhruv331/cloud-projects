@@ -122,6 +122,15 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
+        - PolicyName: UnzipLambdaStepFunctionsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: UnzipLambdaStartExecution
+                Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource: !Ref CustomerOnboardingStateMachine
 
   # ── Write-to-Dynamo Lambda ─────────────────────────────────────────────────
   WriteDynamoLambdaRole:
@@ -393,6 +402,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: UnzipLambda
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref CustomerOnboardingStateMachine
       CodeUri: unzip_lambda/
       Handler: UnzipLambda.lambda_handler
       Runtime: python3.13
