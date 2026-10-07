@@ -87,10 +87,11 @@ Resources:
         - Protocol: email
           Endpoint: pdhruv331@gmail.com
 
-  DocumentLambdaRole:
+  # ── Unzip Lambda ──────────────────────────────────────────────────────────
+  UnzipLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: customer-onboarding-lambda-role-sam
+      RoleName: unzip-lambda-role-sam
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -99,7 +100,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: DocumentLambdaCloudWatchPolicy
+        - PolicyName: UnzipLambdaCloudWatchPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -110,46 +111,257 @@ Resources:
                 Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/DocumentLambdaSam:*"
-        - PolicyName: DocumentLambdaS3PermissionPolicySam
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/UnzipLambda:*"
+        - PolicyName: UnzipLambdaS3Policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Sid: DocumentLambdaS3PermissionPolicy
+              - Sid: UnzipLambdaS3GetPut
                 Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
-              - Sid: DocumentLambdaDynamoDBPermissionPolicy
+
+  # ── Write-to-Dynamo Lambda ─────────────────────────────────────────────────
+  WriteDynamoLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: write-dynamo-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: WriteDynamoLambdaCloudWatchPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/WriteDynamoLambda:*"
+        - PolicyName: WriteDynamoLambdaS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteDynamoS3GetObject
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: "arn:aws:s3:::customer-application-bucket-5911sam/*"
+        - PolicyName: WriteDynamoLambdaDynamoDBPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteDynamoPutItem
                 Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                  - dynamodb:UpdateItem
                 Resource: !GetAtt CustomerMetadataTable.Arn
-              - Sid: DocumentLambdaSNSPermissionPolicy
-                Effect: Allow
-                Action: sns:Publish
-                Resource: !GetAtt ApplicationNotification.TopicArn
-        - PolicyName: DocumentLambdaRekognitionPolicy
-          PolicyDocument: 
+
+  # ── Compare-Faces Lambda ───────────────────────────────────────────────────
+  CompareFacesLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: compare-faces-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CompareFacesLambdaCloudWatchPolicy
+          PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Sid: RekognitionCompareFacePolicy
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/CompareFacesLambda:*"
+        - PolicyName: CompareFacesLambdaRekognitionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareFacesRekognitionPolicy
                 Effect: Allow
                 Action:
                   - rekognition:CompareFaces
                 Resource: "*"
-        - PolicyName: DocumentLambdaTextractPolicy
-          PolicyDocument: 
+        - PolicyName: CompareFacesLambdaDynamoDBPolicy
+          PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Sid: TextractIDPolicy
+              - Sid: CompareFacesDynamoUpdateItem
+                Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt CustomerMetadataTable.Arn
+        - PolicyName: CompareFacesLambdaSNSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareFacesSNSPublish
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !GetAtt ApplicationNotification.TopicArn
+
+  # ── Compare-Details Lambda ─────────────────────────────────────────────────
+  CompareDetailsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: compare-details-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CompareDetailsLambdaCloudWatchPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/CompareDetailsLambda:*"
+        - PolicyName: CompareDetailsLambdaTextractPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareDetailsTextractAnalyzeID
                 Effect: Allow
                 Action:
                   - textract:AnalyzeID
                 Resource: "*"
+        - PolicyName: CompareDetailsLambdaDynamoDBPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareDetailsDynamoUpdateItem
+                Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt CustomerMetadataTable.Arn
+        - PolicyName: CompareDetailsLambdaSNSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CompareDetailsSNSPublish
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !GetAtt ApplicationNotification.TopicArn
 
+
+  # ── Send-to-Queue Lambda ───────────────────────────────────────────────────
+  SendToQueueLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: send-to-queue-lambda-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SendToQueueLambdaCloudWatchPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/SendToQueueLambda:*"
+        - PolicyName: SendToQueueLambdaSQSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: SendToQueueSQSSendMessage
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt LicenseSQSQueue.Arn
+
+  # ── Step Functions State Machine Role ─────────────────────────────────────
+  StateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: customer-onboarding-state-machine-role-sam
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StateMachineLambdaInvokePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: InvokeLambdaFunctions
+                Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt WriteDynamoLambdaFunction.Arn
+                  - !GetAtt CompareFacesLambdaFunction.Arn
+                  - !GetAtt CompareDetailsLambdaFunction.Arn
+                  - !GetAtt SendToQueueLambdaFunction.Arn
+        - PolicyName: StateMachineCloudWatchLogsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutLogEvents
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
+        - PolicyName: StateMachineXRayPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: "*"
 
   ValidateLicenseLambdaRole:
     Type: AWS::IAM::Role
@@ -176,30 +388,145 @@ Resources:
                   - logs:PutLogEvents
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ValidateLicenseLambdaFunction:*"
 
-  DocumentLambdaFunction:
+  # ── Unzip Lambda Function ──────────────────────────────────────────────────
+  UnzipLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: DocumentLambdaSam
-      Environment:
-        Variables:
-          DYNAMODB_TABLE_NAME: !Ref CustomerMetadataTable
-          TOPIC: !Ref ApplicationNotification
-      CodeUri: document_lambda/
-      Handler: DocumentLambdaSam.lambda_handler
+      FunctionName: UnzipLambda
+      CodeUri: unzip_lambda/
+      Handler: UnzipLambda.lambda_handler
       Runtime: python3.13
-      Role: !GetAtt DocumentLambdaRole.Arn
+      Role: !GetAtt UnzipLambdaRole.Arn
       Timeout: 20
       Events:
         S3Event:
           Type: S3
           Properties:
-            Bucket: !Ref CustomerApplicationBucket # This is the bucket resource name in the template
+            Bucket: !Ref CustomerApplicationBucket
             Events: s3:ObjectCreated:Put
             Filter:
               S3Key:
                 Rules:
-                - Name: prefix
-                  Value: zipped/ 
+                  - Name: prefix
+                    Value: zipped/
+
+  # ── Write-to-Dynamo Lambda Function ───────────────────────────────────────
+  WriteDynamoLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: WriteDynamoLambda
+      Environment:
+        Variables:
+          TABLE: !Ref CustomerMetadataTable
+      CodeUri: write_dynamo_lambda/
+      Handler: WriteDynamoLambda.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt WriteDynamoLambdaRole.Arn
+      Timeout: 20
+
+  # ── Compare-Faces Lambda Function ─────────────────────────────────────────
+  CompareFacesLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CompareFacesLambda
+      Environment:
+        Variables:
+          TABLE: !Ref CustomerMetadataTable
+          TOPIC: !Ref ApplicationNotification
+      CodeUri: compare_faces_lambda/
+      Handler: CompareFacesLambda.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt CompareFacesLambdaRole.Arn
+      Timeout: 20
+
+  # ── Compare-Details Lambda Function ───────────────────────────────────────
+  CompareDetailsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CompareDetailsLambda
+      Environment:
+        Variables:
+          TABLE: !Ref CustomerMetadataTable
+          TOPIC: !Ref ApplicationNotification
+      CodeUri: compare_details_lambda/
+      Handler: CompareDetailsLambda.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt CompareDetailsLambdaRole.Arn
+      Timeout: 30
+
+  # ── Send-to-Queue Lambda Function ─────────────────────────────────────────
+  SendToQueueLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SendToQueueLambda
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref LicenseSQSQueue
+      CodeUri: send_to_queue_lambda/
+      Handler: SendToQueueLambda.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt SendToQueueLambdaRole.Arn
+      Timeout: 10
+
+  # ── Step Functions State Machine ───────────────────────────────────────────
+  CustomerOnboardingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: CustomerOnboardingStateMachine
+      Role: !GetAtt StateMachineRole.Arn
+      Tracing:
+        Enabled: true
+      Definition:
+        Comment: >
+          Orchestrates the customer onboarding document validation workflow.
+          Runs WriteDynamo first, then CompareFaces and CompareDetails in parallel,
+          and only sends to the license queue if both validations pass.
+        StartAt: WriteDynamo
+        States:
+          WriteDynamo:
+            Type: Task
+            Resource: !GetAtt WriteDynamoLambdaFunction.Arn
+            Next: ValidateInParallel
+            ResultPath: "$"
+            Comment: >
+              Parses the customer CSV and writes the record to DynamoDB.
+              Passes bucket, app_uuid, and customer_details downstream.
+
+          ValidateInParallel:
+            Type: Parallel
+            Comment: >
+              Runs face comparison and details comparison concurrently.
+              If either branch raises an error the execution fails here
+              and the license is NOT forwarded for third-party validation.
+            Branches:
+              - StartAt: CompareFaces
+                States:
+                  CompareFaces:
+                    Type: Task
+                    Resource: !GetAtt CompareFacesLambdaFunction.Arn
+                    End: true
+                    Comment: >
+                      Compares the selfie and license photos using Rekognition.
+                      Raises FaceMatchError if photos do not match.
+              - StartAt: CompareDetails
+                States:
+                  CompareDetails:
+                    Type: Task
+                    Resource: !GetAtt CompareDetailsLambdaFunction.Arn
+                    End: true
+                    Comment: >
+                      Compares CSV data against Textract-extracted license fields.
+                      Raises DetailsMatchError if data does not match.
+            Next: SendToQueue
+
+          SendToQueue:
+            Type: Task
+            Resource: !GetAtt SendToQueueLambdaFunction.Arn
+            End: true
+            Comment: >
+              Reached only when both parallel validations passed.
+              Sends the driver license ID to the LicenseQueue for
+              third-party validation by SubmitLicenseLambda.
 
   ValidateLicenseLambdaFunction:
     Type: AWS::Serverless::Function 
@@ -222,4 +549,94 @@ Resources:
     Properties:
       Name: ValidateLicenseApi
       StageName: $default
+      
+  LicenseDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: LicenseDeadLetterQueue
+      
+  LicenseSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: LicenseQueue
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt LicenseDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  SubmitLicenseFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: submit-license-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SubmitLicenseSQSReadPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowReadFromLicenseQueue
+                Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt LicenseSQSQueue.Arn
+        - PolicyName: SubmitLicenseDynamoDBPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowUpdateCustomerMetadataTable
+                Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt CustomerMetadataTable.Arn
+        - PolicyName: SubmitLicenseSNSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowPublishToApplicationNotifications
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !GetAtt ApplicationNotification.TopicArn
+        - PolicyName: SubmitLicenseCloudWatchPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/SubmitLicenseLambda:*"
+  SubmitLicenseLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SubmitLicenseLambda
+      Environment:
+        Variables:
+          TABLE: !Ref CustomerMetadataTable
+          TOPIC: !Ref ApplicationNotification
+          QUEUE_URL: !Ref LicenseSQSQueue
+          INVOKE_URL: !Sub "https://${ValidateLicenseApi}.execute-api.${AWS::Region}.amazonaws.com/license"
+      CodeUri: submit_license_lambda/
+      Handler: SubmitLicenseLambda.lambda_handler
+      Runtime: python3.13
+      Role: !GetAtt SubmitLicenseFunctionRole.Arn
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Enabled: true
+            BatchSize: 1
+            Queue: !GetAtt LicenseSQSQueue.Arn
+      
       

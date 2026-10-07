@@ -166,3 +166,20 @@ def lambda_handler(event, context):
     print(f"selfie_key = {selfie_key}")
     print(f"license_key = {license_key}")
     print(f"details_file = {details_file}")
+
+    # Send a message to the LicenseQueue so SubmitLicenseLambda can perform third-party license validation
+    sqs = boto3.client('sqs', region_name=region)
+    queue_url = os.environ['QUEUE_URL']
+
+    message_body = json.dumps({
+        "driver_license_id": customer_details.get('DOCUMENT_NUMBER'),
+        "validation_override": True,
+        "uuid": app_uuid
+    })
+
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageBody=message_body
+    )
+
+    logger.info(f"Sent license validation message to SQS for APP_UUID: {app_uuid}")
