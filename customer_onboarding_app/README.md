@@ -171,11 +171,16 @@ Each application's record holds the outcome of every check. `8d247914` passed th
 - **Amazon Rekognition** — selfie-to-license face comparison
 - **Amazon Textract** — extracts fields from the license image
 - **Amazon API Gateway** — HTTP API in front of the mock license validation service
-- **AWS X-Ray** — tracing for state machine executions
+- **AWS X-Ray** — end-to-end tracing across the state machine and every Lambda function
 - **Amazon CloudWatch** — Lambda function logs
 - **AWS IAM** — separate least-privilege role per function and for the state machine
 - **AWS SAM** — infrastructure as code for the whole stack
 
-## Why This Project
+## What I Learned
 
-_TODO_
+- **Services that read S3 for you use your function's permissions.** Rekognition and Textract fetch the image with the calling Lambda's role, so a missing `s3:GetObject` shows up as an "invalid S3 object" error from the AI service, not an access error. Without `s3:ListBucket`, a missing key also looks like a 403 instead of a 404, so I added it to get honest errors.
+- **S3 event keys are URL-encoded.** A file with spaces in its name arrives as `name+with+spaces`, so the key has to be decoded before it is used.
+- **Step Functions execution names must be unique.** Naming each execution after the application ID broke re-uploads, so each name now adds the Lambda request ID.
+- **Check what an API actually returns.** The mock license service returns a bare `true`, which crashed code that expected a JSON object. SQS retried the message and the dead-letter queue caught the failures, which showed me that part of the design working.
+- **Tracing needs to be turned on everywhere.** Enabling X-Ray only on the state machine gave an empty map. Turning it on for every function, and granting each role permission to write traces, produced one trace that follows a request across the whole pipeline.
+- **Least privilege takes iteration.** Each function has its own narrowly scoped role, and I added permissions one at a time as the real calls showed what was missing.
