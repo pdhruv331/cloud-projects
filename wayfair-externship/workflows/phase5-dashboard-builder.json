@@ -1,0 +1,175 @@
+{
+  "_note": "Export of n8n workflow jjtCT9yeRxpTteRw at creation (skeleton matching the Wayfair guide; Code nodes await the guide's code). Sticky notes omitted.",
+  "name": "Project 5 - Dashboard Builder Agent",
+  "id": "jjtCT9yeRxpTteRw",
+  "nodes": [
+    {
+      "name": "Upload Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "formTitle": "Project 5: Build Dashboard",
+        "formDescription": "Upload your Project 2 (Market Trend) and Project 3 (Competitor Analysis) HTML reports to generate a category dashboard.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product Category",
+              "fieldType": "text",
+              "placeholder": "e.g., Area Rug, Outdoor Rug, Hallway Runner, Shag Rug",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "P2 Market Trend Report",
+              "fieldType": "file",
+              "multipleFiles": true,
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "P3 Competitor Analysis Report",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".html",
+              "requiredField": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Fetch Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "http://34.196.186.128:8000/api/dashboard/template",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "name": "Extract Form Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Extract Form Files: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "Parse P2 & P3 Reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Parse P2 & P3 Reports: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "Build Dashboard HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Build Dashboard HTML: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    },
+    {
+      "name": "Prepare Download",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Prepare Download: paste the guide's code here.\nreturn $input.all();\n"
+      }
+    }
+  ],
+  "connections": {
+    "Upload Form": {
+      "main": [
+        [
+          {
+            "node": "Fetch Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Template": {
+      "main": [
+        [
+          {
+            "node": "Extract Form Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Form Files": {
+      "main": [
+        [
+          {
+            "node": "Parse P2 & P3 Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse P2 & P3 Reports": {
+      "main": [
+        [
+          {
+            "node": "Build Dashboard HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Dashboard HTML": {
+      "main": [
+        [
+          {
+            "node": "Prepare Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  }
+}
