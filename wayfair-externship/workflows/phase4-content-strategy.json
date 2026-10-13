@@ -1,8 +1,8 @@
 {
-  "_note": "Export of n8n workflow iC3xoxy9SsgsdK9m after the Phase 4 enhancement (voice system message, evidence rules, audience/season inputs). Download, Preview and Notes are unchanged from the provided version e60b1892 in n8n history.",
+  "_note": "Export of n8n workflow iC3xoxy9SsgsdK9m after the Phase 4 enhancement (voice system message, evidence rules, audience/season inputs). Download, Preview and Notes are unchanged from the provided version e60b1892 in n8n history. As of version c28efb79 (Oct 7) the Mistral node is disabled in n8n; re-enable it before running.",
   "name": "Project 4 - Content Strategy Generator v3 (Premium)",
   "id": "iC3xoxy9SsgsdK9m",
-  "versionId": "e60b1892-bef8-4c1f-9bd6-9fd9fbbc02a1",
+  "versionId": "c28efb79-3fa6-48c4-b093-259e7c4f67ef",
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
@@ -194,7 +194,8 @@
           "id": "S1gjPjQ4bvcDXqeN",
           "name": "Mistral (OpenAI-compatible)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
