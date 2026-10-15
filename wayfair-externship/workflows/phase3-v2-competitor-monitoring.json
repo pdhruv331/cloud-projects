@@ -1,7 +1,513 @@
 {
-  "name": "Phase 3 - Competitor Monitoring Agent v2",
   "id": "AjaQorgLqUA6y4fu",
-  "versionId": "5f589864-02b7-47d5-b6aa-562fd33389ed",
+  "name": "Phase 3 - Competitor Monitoring Agent v2",
+  "active": false,
+  "isArchived": false,
+  "versionId": "d01cc528-46bb-4750-89fb-99793659de03",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "nodeCount": 51,
+  "createdAt": "2026-10-15T19:46:06.527Z",
+  "updatedAt": "2026-10-15T22:21:22.050Z",
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "tags": [],
+  "parentFolderId": null,
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Input Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Category?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Wayfair Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Amazon Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Walmart Products",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Wayfair Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Wayfair Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Amazon Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Amazon Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Walmart Products": {
+      "main": [
+        [
+          {
+            "node": "Reshape Walmart Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scope Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Scope": {
+      "main": [
+        [
+          {
+            "node": "Executive Summary Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executive Summary Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Executive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Executive": {
+      "main": [
+        [
+          {
+            "node": "Amazon Analysis Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon Analysis Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Amazon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Amazon": {
+      "main": [
+        [
+          {
+            "node": "Comparison Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparison Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Comparison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Comparison": {
+      "main": [
+        [
+          {
+            "node": "Pricing & Whitespace Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pricing & Whitespace Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait After Pricing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait After Pricing": {
+      "main": [
+        [
+          {
+            "node": "Recommendations Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recommendations Generator": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Supplier Identification Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Executive": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Executive Summary Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Amazon": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Amazon Analysis Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Comparison": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Comparison Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Pricing & Whitespace": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Pricing & Whitespace Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral - Recommendations": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Recommendations Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Suppliers": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supplier Identification Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Wayfair Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reshape Amazon Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Reshape Walmart Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Input Parser": {
+      "main": [
+        [
+          {
+            "node": "Valid Category?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Assembler": {
+      "main": [
+        [
+          {
+            "node": "Clean AI output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download HTML file from Here": {
+      "main": [
+        [
+          {
+            "node": "See HTML output here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Record Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Listings": {
+      "main": [
+        [
+          {
+            "node": "Save Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Listings": {
+      "main": [
+        [
+          {
+            "node": "Scope Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "See HTML output here": {
+      "main": [
+        [
+          {
+            "node": "Build Run Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Run Log": {
+      "main": [
+        [
+          {
+            "node": "Save Run Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Input Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier Identification Generator": {
+      "main": [
+        [
+          {
+            "node": "Prepare Evidence Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Evidence Check": {
+      "main": [
+        [
+          {
+            "node": "AI Evidence Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Evidence Check": {
+      "main": [
+        [
+          {
+            "node": "HTML Assembler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean AI output": {
+      "main": [
+        [
+          {
+            "node": "Add Trust Box",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Trust Box": {
+      "main": [
+        [
+          {
+            "node": "Download HTML file from Here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Run Log": {
+      "main": [
+        [
+          {
+            "node": "Report Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Row": {
+      "main": [
+        [
+          {
+            "node": "Save Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Report": {
+      "main": [
+        [
+          {
+            "node": "Run Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "nodes": [
     {
       "parameters": {
@@ -697,7 +1203,7 @@
     },
     {
       "parameters": {
-        "html": "{{ $json.cleaned_html }}"
+        "html": "{{ $('Add Trust Box').first().json.cleaned_html }}"
       },
       "id": "22096704-15ce-43fe-8212-b7c597daf8fd",
       "name": "See HTML output here",
@@ -709,6 +1215,7 @@
       ]
     },
     {
+      "id": "d7ca5127-40c1-4b39-b2f8-2a9f173a5424",
       "name": "Record Listings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -721,6 +1228,7 @@
       }
     },
     {
+      "id": "015cc3d8-ccbc-4b58-85b4-4a8ae62c5209",
       "name": "Save Listings",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
@@ -745,6 +1253,7 @@
       }
     },
     {
+      "id": "652a19de-5076-4612-a94b-5078b587bbd3",
       "name": "Build Run Log",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -753,10 +1262,11 @@
         336
       ],
       "parameters": {
-        "jsCode": "// Build Run Log: one row per run in agent_runs, so a run that \"succeeds\" with thin output\n// is visible (status \"degraded\") instead of passing silently.\nconst parsed = $('Input Parser').first().json;\nconst startedAt = $('Record Listings').first().json.run_date;\nconst finishedAt = new Date();\n\nconst count = (nodeName, field) => ($(nodeName).first().json[field] || []).length;\nconst listings = {\n  wayfair: count('Reshape Wayfair Response', 'wayfair_products'),\n  amazon: count('Reshape Amazon Response', 'amazonProducts'),\n  walmart: count('Reshape Walmart Response', 'walmartProducts')\n};\n\n// A section counts as generated only if its agent returned real content.\nconst SECTIONS = ['Executive Summary Generator', 'Amazon Analysis Generator', 'Comparison Generator',\n  'Pricing & Whitespace Generator', 'Recommendations Generator', 'Supplier Identification Generator'];\nconst missing = SECTIONS.filter(name => {\n  try { return String($(name).first().json.output || '').trim().length < 200; }\n  catch (e) { return true; }\n});\n\nconst warnings = [];\nfor (const [retailer, n] of Object.entries(listings)) {\n  if (n === 0) warnings.push(`no ${retailer} listings`);\n  else if (n < 10) warnings.push(`only ${n} ${retailer} listings`);\n}\nif (missing.length) warnings.push(`missing sections: ${missing.map(s => s.replace(' Generator', '')).join(', ')}`);\n\nreturn [{\n  json: {\n    run_id: String($execution.id),\n    workflow: 'Phase 3 - Competitor Monitoring Agent v2',\n    category_key: parsed.categoryKey,\n    focus: parsed.focus || '',\n    started_at: startedAt,\n    finished_at: finishedAt.toISOString(),\n    duration_s: Math.round((finishedAt - new Date(startedAt)) / 1000),\n    status: warnings.length ? 'degraded' : 'ok',\n    wayfair_listings: listings.wayfair,\n    amazon_listings: listings.amazon,\n    walmart_listings: listings.walmart,\n    sections_generated: SECTIONS.length - missing.length,\n    sections_expected: SECTIONS.length,\n    missing_sections: missing.map(s => s.replace(' Generator', '')).join(', '),\n    warnings: warnings.join('; ')\n  }\n}];\n"
+        "jsCode": "// Build Run Log: one row per run in agent_runs, so a run that \"succeeds\" with thin output\n// is visible (status \"degraded\") instead of passing silently.\nconst parsed = $('Input Parser').first().json;\nconst startedAt = $('Record Listings').first().json.run_date;\nconst finishedAt = new Date();\nlet trustVerdict = '';\ntry { trustVerdict = $('AI Evidence Check').first().json.verdict || ''; } catch (e) { trustVerdict = 'not checked'; }\n\nconst count = (nodeName, field) => ($(nodeName).first().json[field] || []).length;\nconst listings = {\n  wayfair: count('Reshape Wayfair Response', 'wayfair_products'),\n  amazon: count('Reshape Amazon Response', 'amazonProducts'),\n  walmart: count('Reshape Walmart Response', 'walmartProducts')\n};\n\n// A section counts as generated only if its agent returned real content.\nconst SECTIONS = ['Executive Summary Generator', 'Amazon Analysis Generator', 'Comparison Generator',\n  'Pricing & Whitespace Generator', 'Recommendations Generator', 'Supplier Identification Generator'];\nconst missing = SECTIONS.filter(name => {\n  try { return String($(name).first().json.output || '').trim().length < 200; }\n  catch (e) { return true; }\n});\n\nconst warnings = [];\nfor (const [retailer, n] of Object.entries(listings)) {\n  if (n === 0) warnings.push(`no ${retailer} listings`);\n  else if (n < 10) warnings.push(`only ${n} ${retailer} listings`);\n}\nif (missing.length) warnings.push(`missing sections: ${missing.map(s => s.replace(' Generator', '')).join(', ')}`);\n\nreturn [{\n  json: {\n    run_id: String($execution.id),\n    workflow: 'Phase 3 - Competitor Monitoring Agent v2',\n    category_key: parsed.categoryKey,\n    focus: parsed.focus || '',\n    started_at: startedAt,\n    finished_at: finishedAt.toISOString(),\n    duration_s: Math.round((finishedAt - new Date(startedAt)) / 1000),\n    status: warnings.length ? 'degraded' : 'ok',\n    wayfair_listings: listings.wayfair,\n    amazon_listings: listings.amazon,\n    walmart_listings: listings.walmart,\n    sections_generated: SECTIONS.length - missing.length,\n    sections_expected: SECTIONS.length,\n    missing_sections: missing.map(s => s.replace(' Generator', '')).join(', '),\n    warnings: warnings.join('; '),\n    trust_verdict: trustVerdict\n  }\n}];\n"
       }
     },
     {
+      "id": "330cf33c-da6f-4238-bcd7-c7369412696c",
       "name": "Save Run Log",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
@@ -781,6 +1291,7 @@
       }
     },
     {
+      "id": "a8701bf7-4350-4a81-960d-79ce1c58f0b2",
       "name": "Note: Data Layer + Run Log",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -794,427 +1305,150 @@
         "height": 200,
         "content": "## Beyond the brief: shared data layer\n**Record Listings → Save Listings** writes every listing (retailer, product, price, rating, reviews, URL) to the `competitor_listings` table on each run.\n**Build Run Log → Save Run Log** (end of the flow) writes run health to `agent_runs`: listings per retailer, sections generated, and status ok / degraded."
       }
+    },
+    {
+      "id": "0e95c3ef-b83f-4e27-8c53-988dc9b0e7eb",
+      "name": "When Called by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        528
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chatInput",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "86058fd7-9de0-4b65-b604-d82cca64c88b",
+      "name": "Prepare Evidence Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4448,
+        800
+      ],
+      "parameters": {
+        "jsCode": "// Prepare Evidence Check: hand the six AI sections and the listing data they were written from\n// to the shared AI Evidence Check, plus the statistics the agents are allowed to compute\n// (averages, medians, ranges, gaps), so a correct average is not flagged as invented.\nconst parsed = $('Input Parser').first().json;\nconst num = v => { const m = String(v ?? '').replace(/,/g, '').match(/\\d+(?:\\.\\d+)?/); return m ? parseFloat(m[0]) : null; };\n\nconst RETAILERS = [\n  ['Wayfair', 'Reshape Wayfair Response', 'wayfair_products'],\n  ['Amazon', 'Reshape Amazon Response', 'amazonProducts'],\n  ['Walmart', 'Reshape Walmart Response', 'walmartProducts'],\n];\nconst listings = {};\nfor (const [retailer, nodeName, field] of RETAILERS) {\n  listings[retailer] = ($(nodeName).first().json[field] || []).map(p => ({\n    name: p.name, price: num(p.price), rating: num(p.rating), reviews: num(p.review_count)\n  }));\n}\n\n// Statistics an analyst could fairly derive from the listings.\nconst derived = [];\nconst summary = [];\nconst round2 = n => Math.round(n * 100) / 100;\nconst stats = vals => {\n  const v = vals.filter(x => x !== null).sort((a, b) => a - b);\n  if (!v.length) return null;\n  const sum = v.reduce((a, b) => a + b, 0);\n  const mid = Math.floor(v.length / 2);\n  return { count: v.length, sum: round2(sum), avg: round2(sum / v.length), median: v.length % 2 ? v[mid] : round2((v[mid - 1] + v[mid]) / 2), min: v[0], max: v[v.length - 1] };\n};\nconst avgPrice = {};\nlet allPrices = [];\nfor (const [retailer, items] of Object.entries(listings)) {\n  derived.push(items.length);\n  allPrices = allPrices.concat(items.map(i => i.price));\n  for (const field of ['price', 'rating', 'reviews']) {\n    const s = stats(items.map(i => i[field]));\n    if (!s) continue;\n    derived.push(s.count, s.sum, s.avg, s.median, s.min, s.max, round2(s.max - s.min));\n    summary.push(`${retailer} ${field}: avg ${s.avg}, median ${s.median}, min ${s.min}, max ${s.max} (${s.count} listings)`);\n    if (field === 'price') avgPrice[retailer] = s.avg;\n  }\n}\nconst all = stats(allPrices);\nif (all) derived.push(all.count, all.avg, all.median, all.min, all.max);\n// Gaps between retailers' average prices, in dollars and percent, both directions.\nconst names = Object.keys(avgPrice);\nfor (const a of names) for (const b of names) {\n  if (a === b) continue;\n  derived.push(round2(avgPrice[a] - avgPrice[b]), round2(Math.abs(avgPrice[a] - avgPrice[b]) / avgPrice[b] * 100));\n}\n\nconst SECTIONS = ['Executive Summary', 'Amazon Analysis', 'Comparison', 'Pricing & Whitespace', 'Recommendations', 'Supplier Identification'];\nconst sections = SECTIONS.map(name => {\n  let text = '';\n  try { text = String($(name + ' Generator').first().json.output || ''); } catch (e) { text = ''; }\n  return { name, text };\n});\n\nreturn [{\n  json: {\n    run_id: String($execution.id),\n    workflow: 'Phase 3 - Competitor Monitoring Agent v2',\n    category_key: parsed.categoryKey,\n    sections,\n    source_text: JSON.stringify(listings),\n    derived_numbers: derived,\n    derived_summary: summary.join('\\n'),\n    banned_phrases: [],\n    example_lines: [],\n    check_past_years: false\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "8eca5712-78ff-4264-9850-72c9d60816d0",
+      "name": "AI Evidence Check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4672,
+        800
+      ],
+      "parameters": {
+        "mode": "once",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GhtKfO6hrdLRzEjS",
+          "cachedResultName": "AI Evidence Check"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "d3d9cc46-6ff0-4102-b42e-bf024c79e160",
+      "name": "Add Trust Box",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Add Trust Box: put the AI Evidence Check result at the top of the report, so readers see\n// how far to trust it before they read it.\nconst c = $input.first().json;\nconst trust = $('AI Evidence Check').first().json;\nlet html = String(c.cleaned_html || '');\nconst box = trust.trust_html || '';\nif (/<main class=\"report-content\">/.test(html)) html = html.replace(/<main class=\"report-content\">/, m => m + box);\nelse html = html.replace(/<body[^>]*>/i, m => m + box);\nreturn [{ json: { ...c, cleaned_html: html, minified_html: html.replace(/\\s+/g, ' '), verdict: trust.verdict } }];\n"
+      }
+    },
+    {
+      "id": "a2cb7e7b-b78f-4889-ae5e-67f1d264ac52",
+      "name": "Report Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6080,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Report Row: keep the finished HTML report so Slack and the dashboard can link to it by run_id.\nconst run = $('Build Run Log').first().json;\nreturn [{\n  json: {\n    run_id: run.run_id,\n    workflow: run.workflow,\n    category_key: run.category_key,\n    focus: run.focus,\n    created_at: run.finished_at,\n    verdict: run.trust_verdict,\n    html: $('Add Trust Box').first().json.cleaned_html\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "bd4a32a8-68a3-496f-bc20-0c656771afd5",
+      "name": "Save Report",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        6304,
+        336
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "KattFxNGH92iKW47",
+          "cachedResultName": "reports"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "77a6fdcc-3141-4737-b9f7-394b0723d80c",
+      "name": "Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6528,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Run Summary: the short answer a category manager sees in chat or Slack, with a link to the full report.\nconst run = $('Build Run Log').first().json;\nconst trust = $('AI Evidence Check').first().json;\nconst prep = $('Prepare Evidence Check').first().json;\nconst strip = s => String(s || '').replace(/```[a-z]*|```/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\\*\\*/g, '').replace(/\\s+/g, ' ').trim();\n\nlet keyInsight = '';\ntry {\n  const ex = String($('Executive Summary Generator').first().json.output || '');\n  const m = ex.match(/class=\"key-insight\"[\\s\\S]*?<p>([\\s\\S]*?)<\\/p>/i);\n  keyInsight = strip(m ? m[1] : ex).slice(0, 500);\n} catch (e) { keyInsight = ''; }\n\nconst priceLines = String(prep.derived_summary || '').split('\\n').filter(l => / price: /.test(l));\nconst reportUrl = 'https://n8n.builtbydhruv.com/webhook/rug-intel/report?run=' + encodeURIComponent(run.run_id);\nconst category = run.category_key.replace(/_/g, ' ').replace(/\\b\\w/g, c => c.toUpperCase());\n\nconst output = [\n  `${category} deep dive${run.focus ? ' (focus: ' + run.focus + ')' : ''}, run ${run.run_id}`,\n  keyInsight ? 'Key insight: ' + keyInsight : '',\n  'Prices: ' + priceLines.join(' | '),\n  trust.slack_text.replace(/\\*/g, ''),\n  run.status === 'ok' ? 'Run health: ok' : 'Run health: degraded (' + run.warnings + ')',\n  'Full report: ' + reportUrl\n].filter(Boolean).join('\\n\\n');\n\nreturn [{\n  json: {\n    output,\n    run_id: run.run_id,\n    category_key: run.category_key,\n    category,\n    focus: run.focus,\n    status: run.status,\n    warnings: run.warnings,\n    verdict: trust.verdict,\n    trust_summary: trust.summary,\n    trust_slack_text: trust.slack_text,\n    key_insight: keyInsight,\n    price_lines: priceLines,\n    report_url: reportUrl\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "f8dfa2ed-8d9b-4531-86df-3ca3be336941",
+      "name": "Note: Evidence Check + Slack",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4400,
+        1000
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 620,
+        "height": 240,
+        "content": "## Beyond the brief: trust and on-demand use\n**Prepare Evidence Check → AI Evidence Check** sends all six sections and the listing data to the shared `AI Evidence Check` workflow. Its verdict (pass / review / block) appears as a Trust box at the top of the report (**Add Trust Box**) and in `agent_runs.trust_verdict`.\n**Report Row → Save Report** keeps the HTML in `reports`; **Run Summary** is the short answer returned to chat or to the Slack `/rug-intel` command (**When Called by Another Workflow**)."
+      }
     }
   ],
-  "connections": {
-    "When chat message received": {
-      "main": [
-        [
-          {
-            "node": "Input Parser",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Valid Category?": {
-      "main": [
-        [
-          {
-            "node": "Fetch Wayfair Products",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Fetch Amazon Products",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Fetch Walmart Products",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Wayfair Products": {
-      "main": [
-        [
-          {
-            "node": "Reshape Wayfair Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Amazon Products": {
-      "main": [
-        [
-          {
-            "node": "Reshape Amazon Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Walmart Products": {
-      "main": [
-        [
-          {
-            "node": "Reshape Walmart Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Record Listings",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Scope Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait After Scope",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait After Scope": {
-      "main": [
-        [
-          {
-            "node": "Executive Summary Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Executive Summary Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait After Executive",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait After Executive": {
-      "main": [
-        [
-          {
-            "node": "Amazon Analysis Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Amazon Analysis Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait After Amazon",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait After Amazon": {
-      "main": [
-        [
-          {
-            "node": "Comparison Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Comparison Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait After Comparison",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait After Comparison": {
-      "main": [
-        [
-          {
-            "node": "Pricing & Whitespace Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pricing & Whitespace Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait After Pricing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait After Pricing": {
-      "main": [
-        [
-          {
-            "node": "Recommendations Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Recommendations Generator": {
-      "main": [
-        [
-          {
-            "node": "Wait",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait": {
-      "main": [
-        [
-          {
-            "node": "Supplier Identification Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Executive": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Executive Summary Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter - Amazon": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Amazon Analysis Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Comparison": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Comparison Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Pricing & Whitespace": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Pricing & Whitespace Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mistral - Recommendations": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Recommendations Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter - Suppliers": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Supplier Identification Generator",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Reshape Wayfair Response": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Reshape Amazon Response": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Reshape Walmart Response": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Input Parser": {
-      "main": [
-        [
-          {
-            "node": "Valid Category?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Supplier Identification Generator": {
-      "main": [
-        [
-          {
-            "node": "HTML Assembler",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTML Assembler": {
-      "main": [
-        [
-          {
-            "node": "Clean AI output",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Clean AI output": {
-      "main": [
-        [
-          {
-            "node": "Download HTML file from Here",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download HTML file from Here": {
-      "main": [
-        [
-          {
-            "node": "See HTML output here",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Record Listings": {
-      "main": [
-        [
-          {
-            "node": "Save Listings",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Listings": {
-      "main": [
-        [
-          {
-            "node": "Scope Generator",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "See HTML output here": {
-      "main": [
-        [
-          {
-            "node": "Build Run Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Run Log": {
-      "main": [
-        [
-          {
-            "node": "Save Run Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": true
-  },
-  "_note": "Day 1 applied: data layer (competitor_listings mqIkLKIlYoPiQmU5) + run log (agent_runs qg3iqSros89SBP5a)."
+  "nodeGroups": [],
+  "activeVersion": null,
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  }
 }
