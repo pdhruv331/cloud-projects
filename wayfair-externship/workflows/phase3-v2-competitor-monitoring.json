@@ -388,7 +388,8 @@
       "position": [
         2432,
         336
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -616,7 +617,8 @@
       "position": [
         4224,
         336
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -705,6 +707,93 @@
         5392,
         336
       ]
+    },
+    {
+      "name": "Record Listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        540
+      ],
+      "parameters": {
+        "jsCode": "// Record Listings: one row per product per run for the shared competitor_listings table,\n// so later steps (history, change digest, Q&A, dashboard) read data instead of HTML.\nconst parsed = $('Input Parser').first().json;\nconst runId = String($execution.id);\nconst runDate = new Date().toISOString();\nconst num = v => {\n  const m = String(v ?? '').replace(/,/g, '').match(/\\d+(?:\\.\\d+)?/);\n  return m ? parseFloat(m[0]) : null;\n};\n\nconst SOURCES = [\n  ['Wayfair', 'Reshape Wayfair Response', 'wayfair_products'],\n  ['Amazon', 'Reshape Amazon Response', 'amazonProducts'],\n  ['Walmart', 'Reshape Walmart Response', 'walmartProducts'],\n];\n\nconst rows = [];\nfor (const [retailer, nodeName, field] of SOURCES) {\n  for (const p of ($(nodeName).first().json[field] || [])) {\n    rows.push({\n      json: {\n        run_id: runId,\n        run_date: runDate,\n        category_key: parsed.categoryKey,\n        focus: parsed.focus || '',\n        retailer,\n        product_name: String(p.name || '').slice(0, 300),\n        price: num(p.price),\n        rating: num(p.rating),\n        review_count: num(p.review_count),\n        product_url: p.url || ''\n      }\n    });\n  }\n}\n\n// Fail loudly: a competitor report with no listings would only be AI guesswork.\nif (rows.length === 0) {\n  throw new Error('No listings came back from Wayfair, Amazon or Walmart, so there is nothing to analyze. Try again in a few minutes.');\n}\nreturn rows;\n"
+      }
+    },
+    {
+      "name": "Save Listings",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        540
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mqIkLKIlYoPiQmU5",
+          "cachedResultName": "competitor_listings"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Build Run Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5632,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Build Run Log: one row per run in agent_runs, so a run that \"succeeds\" with thin output\n// is visible (status \"degraded\") instead of passing silently.\nconst parsed = $('Input Parser').first().json;\nconst startedAt = $('Record Listings').first().json.run_date;\nconst finishedAt = new Date();\n\nconst count = (nodeName, field) => ($(nodeName).first().json[field] || []).length;\nconst listings = {\n  wayfair: count('Reshape Wayfair Response', 'wayfair_products'),\n  amazon: count('Reshape Amazon Response', 'amazonProducts'),\n  walmart: count('Reshape Walmart Response', 'walmartProducts')\n};\n\n// A section counts as generated only if its agent returned real content.\nconst SECTIONS = ['Executive Summary Generator', 'Amazon Analysis Generator', 'Comparison Generator',\n  'Pricing & Whitespace Generator', 'Recommendations Generator', 'Supplier Identification Generator'];\nconst missing = SECTIONS.filter(name => {\n  try { return String($(name).first().json.output || '').trim().length < 200; }\n  catch (e) { return true; }\n});\n\nconst warnings = [];\nfor (const [retailer, n] of Object.entries(listings)) {\n  if (n === 0) warnings.push(`no ${retailer} listings`);\n  else if (n < 10) warnings.push(`only ${n} ${retailer} listings`);\n}\nif (missing.length) warnings.push(`missing sections: ${missing.map(s => s.replace(' Generator', '')).join(', ')}`);\n\nreturn [{\n  json: {\n    run_id: String($execution.id),\n    workflow: 'Phase 3 - Competitor Monitoring Agent v2',\n    category_key: parsed.categoryKey,\n    focus: parsed.focus || '',\n    started_at: startedAt,\n    finished_at: finishedAt.toISOString(),\n    duration_s: Math.round((finishedAt - new Date(startedAt)) / 1000),\n    status: warnings.length ? 'degraded' : 'ok',\n    wayfair_listings: listings.wayfair,\n    amazon_listings: listings.amazon,\n    walmart_listings: listings.walmart,\n    sections_generated: SECTIONS.length - missing.length,\n    sections_expected: SECTIONS.length,\n    missing_sections: missing.map(s => s.replace(' Generator', '')).join(', '),\n    warnings: warnings.join('; ')\n  }\n}];\n"
+      }
+    },
+    {
+      "name": "Save Run Log",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        5856,
+        336
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qg3iqSros89SBP5a",
+          "cachedResultName": "agent_runs"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Note: Data Layer + Run Log",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        800
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 520,
+        "height": 200,
+        "content": "## Beyond the brief: shared data layer\n**Record Listings → Save Listings** writes every listing (retailer, product, price, rating, reviews, URL) to the `competitor_listings` table on each run.\n**Build Run Log → Save Run Log** (end of the flow) writes run health to `agent_runs`: listings per retailer, sections generated, and status ok / degraded."
+      }
     }
   ],
   "connections": {
@@ -784,7 +873,7 @@
       "main": [
         [
           {
-            "node": "Scope Generator",
+            "node": "Record Listings",
             "type": "main",
             "index": 0
           }
@@ -1076,11 +1165,56 @@
           }
         ]
       ]
+    },
+    "Record Listings": {
+      "main": [
+        [
+          {
+            "node": "Save Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Listings": {
+      "main": [
+        [
+          {
+            "node": "Scope Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "See HTML output here": {
+      "main": [
+        [
+          {
+            "node": "Build Run Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Run Log": {
+      "main": [
+        [
+          {
+            "node": "Save Run Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": true
-  }
+  },
+  "_note": "Day 1 applied: data layer (competitor_listings mqIkLKIlYoPiQmU5) + run log (agent_runs qg3iqSros89SBP5a)."
 }
