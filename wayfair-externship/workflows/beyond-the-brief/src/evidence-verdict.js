@@ -8,13 +8,28 @@ let aiCheck = 'skipped (no factual claims found)';
 if (d.claims.length) {
   aiCheck = 'unavailable (the AI check did not return a usable answer)';
   try {
-    const raw = String($('Claim Support Check').first().json.output || '');
-    const m = raw.replace(/```json|```/g, '').match(/\[[\s\S]*\]/);
-    if (m) {
-      const parsed = JSON.parse(m[0]);
+    const raw = String($('Claim Support Check').first().json.output || '').replace(/```json|```/g, '');
+    // Take the first complete JSON array only: models sometimes repeat their answer.
+    const start = raw.indexOf('[');
+    let depth = 0, inString = false, end = -1;
+    for (let i = start; start >= 0 && i < raw.length; i++) {
+      const ch = raw[i];
+      if (inString) { if (ch === '\\') i++; else if (ch === '"') inString = false; continue; }
+      if (ch === '"') inString = true;
+      else if (ch === '[') depth++;
+      else if (ch === ']' && --depth === 0) { end = i; break; }
+    }
+    if (end > start) {
+      const parsed = JSON.parse(raw.slice(start, end + 1));
       claimResults = parsed
         .filter(r => r && Number.isInteger(Number(r.id)) && d.claims[Number(r.id) - 1])
-        .map(r => ({ claim: d.claims[Number(r.id) - 1], verdict: String(r.verdict || 'unclear').toLowerCase(), reason: String(r.reason || '').slice(0, 300) }));
+        .map(r => {
+          let verdict = String(r.verdict || 'unclear').toLowerCase();
+          const reason = String(r.reason || '').slice(0, 300);
+          // A recommendation or opinion is not a factual claim, whatever label the checker gave it.
+          if (verdict === 'unsupported' && /recommendation|opinion|not a factual|suggestion|advice/i.test(reason)) verdict = 'unclear';
+          return { claim: d.claims[Number(r.id) - 1], verdict, reason };
+        });
       if (claimResults.length) aiCheck = 'done';
     }
   } catch (e) { /* keep "unavailable" */ }

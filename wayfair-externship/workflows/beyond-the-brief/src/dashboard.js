@@ -1,10 +1,11 @@
 // Build Dashboard: one page any category team can open, built from the shared tables
-// (agent_runs, evidence_checks, competitor_listings) instead of from report HTML.
+// (agent_runs, evidence_checks, competitor_listings, weekly_digests) instead of from report HTML.
 const rows = name => $(name).all().map(i => i.json).filter(r => r && r.id !== undefined);
 const runs = rows('Get Runs');
-const checks = rows('Get Evidence Checks');
+const checks = rows('Get Evidence Checks').filter(c => !String(c.run_id).startsWith('test-'));  // hide engine self-tests
 const listings = rows('Get Listings');
 const config = rows('Get Categories');
+const digests = rows('Get Digests');
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmtDate = d => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) : '';
@@ -56,6 +57,23 @@ const positionRows = Object.entries(latestRun).map(([cat, lr]) => {
   };
   const cells = ['Wayfair', 'Amazon', 'Walmart'].map(stat);
   return `<tr><td><strong>${esc(displayName(cat))}</strong><div class="muted">run ${esc(lr.run_id)}, ${fmtDate(lr.date)}</div></td>${cells.map(s => s ? `<td>$${s.avg.toFixed(2)}<div class="muted">${s.n} listings, ${s.rating ? s.rating.toFixed(2) + '★' : 'no rating'}</div></td>` : '<td class="muted">no data</td>').join('')}</tr>`;
+}).join('');
+
+// This week's changes: the latest weekly digest per category.
+const latestDigest = {};
+for (const d of digests) if (!latestDigest[d.category_key] || new Date(d.created_at) > new Date(latestDigest[d.category_key].created_at)) latestDigest[d.category_key] = d;
+const digestCards = Object.values(latestDigest).map(d => {
+  let det = {};
+  try { det = JSON.parse(d.details || '{}'); } catch (e) { det = {}; }
+  const money = n => '$' + Number(n).toFixed(2);
+  const moves = [...(det.drops || []), ...(det.rises || [])].slice(0, 4).map(m => `<li>${esc(m.retailer)}: ${esc(String(m.name).slice(0, 60))} ${money(m.old)} → ${money(m.now)} (${m.pct > 0 ? '+' : ''}${m.pct}%)</li>`).join('');
+  const added = (det.new_listings || []).slice(0, 3).map(n => `<li>New at ${esc(n.retailer)}: ${esc(String(n.name).slice(0, 60))} ${money(n.price)}</li>`).join('');
+  return `<div class="kpi" style="text-align:left">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><strong>${esc(displayName(d.category_key))}</strong>${verdictPill(d.verdict)}</div>
+    <div class="muted">${fmtDate(d.created_at)}${d.baseline_simulated ? ' · vs simulated baseline' : d.baseline_id ? '' : ' · first snapshot'}</div>
+    <div style="margin:6px 0;font-size:.9rem">${d.price_drops} price drops · ${d.price_rises} rises · ${d.new_listings} new · ${d.removed_listings} gone · ${d.rating_moves} rating moves</div>
+    ${moves || added ? `<ul style="margin:0 0 0 18px;font-size:.85rem">${moves}${added}</ul>` : '<div class="muted">No changes.</div>'}
+  </div>`;
 }).join('');
 
 const runRows = runs.slice(0, 15).map(r => {
@@ -117,7 +135,10 @@ const html = `<!DOCTYPE html>
   <section class="card"><h2>Where Wayfair sits today</h2><p>Average price and rating per retailer from each category's latest run.</p>
     <div class="scroll"><table><tr><th>Category</th><th>Wayfair</th><th>Amazon</th><th>Walmart</th></tr>${positionRows || '<tr><td colspan="4" class="muted">No listings yet.</td></tr>'}</table></div></section>
 
-  <section class="card"><h2>Average price by run</h2><p>One point per run. "(sim)" marks the simulated baseline week used to demo the change digest, since the sample API returns a fixed snapshot.</p>
+  <section class="card"><h2>What changed this week</h2><p>From the Monday digest: full listing pool compared product by product with the previous week. The AI summary's trust verdict is shown per category.</p>
+    <div class="kpis" style="margin:0">${digestCards || '<p class="muted">No weekly digest yet.</p>'}</div></section>
+
+  <section class="card"><h2>Average price by deep-dive run</h2><p>One point per deep-dive run. Each run analyzes a 10-listing sample per retailer, so averages move with the sample; week-over-week price moves on the same products are in the weekly digest above.</p>
     <div class="charts">${chartCats.map((c, i) => `<div><h3 style="font-size:.95rem;margin-bottom:6px">${esc(displayName(c))}</h3><canvas id="chart${i}" height="220"></canvas></div>`).join('') || '<p class="muted">No listings yet.</p>'}</div></section>
 
   <section class="card"><h2>Run health</h2><p>Every run logs listings per retailer, sections produced and its trust verdict. "Degraded" means the run finished but something was missing.</p>
