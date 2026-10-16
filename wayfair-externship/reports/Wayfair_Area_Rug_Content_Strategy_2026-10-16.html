@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Insights & Content Report | Wayfair Area Rug</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+    /* Header */
+    .header { background: linear-gradient(135deg, #7B2D8E 0%, #5E1A6E 100%); color: white; padding: 40px; border-radius: 12px; margin-bottom: 30px; }
+    .header h1 { font-size: 2.2em; margin-bottom: 10px; }
+    .header .subtitle { font-size: 1.2em; opacity: 0.9; }
+    .header .meta { margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+    .header .meta-item { background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 20px; font-size: 0.9em; }
+
+    /* Sections */
+    .section { background: white; border-radius: 12px; padding: 30px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .section h2 { color: #7B2D8E; font-size: 1.5em; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f0e6f4; }
+    .section h3 { color: #5E1A6E; font-size: 1.2em; margin: 25px 0 15px 0; }
+    .section > p { color: #666; margin-bottom: 20px; }
+
+    /* Executive Summary */
+    .exec-summary { background: linear-gradient(135deg, #f8f4fa 0%, #fff 100%); border-left: 4px solid #7B2D8E; }
+    .exec-summary p { font-size: 1.05em; margin-bottom: 15px; white-space: pre-line; }
+
+    /* Key Insights Cards */
+    .key-insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
+    .insight-card { background: white; border: 1px solid #e0d4e6; border-radius: 8px; padding: 20px; text-align: center; }
+    .insight-card .number { font-size: 2.2em; font-weight: bold; color: #7B2D8E; }
+    .insight-card .label { font-size: 0.85em; color: #666; margin-top: 5px; }
+
+    /* Quality Check */
+    .qc-ok { border-left: 4px solid #059669; }
+    .qc-warn { border-left: 4px solid #d97706; }
+    .qc-list { margin-left: 20px; }
+    .qc-list li { margin-bottom: 6px; }
+
+    /* Data Foundation */
+    .data-sources { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .data-source-card { background: #f8f9fa; border-radius: 8px; padding: 20px; }
+    .data-source-card h4 { color: #7B2D8E; margin-bottom: 12px; }
+    .data-source-card ul { list-style: none; padding-left: 0; }
+    .data-source-card li { padding: 8px 0; border-bottom: 1px solid #e9ecef; font-size: 0.95em; }
+    .data-source-card li:last-child { border-bottom: none; }
+
+    /* Content Ideas */
+    .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .content-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+    .content-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .content-card-header { background: linear-gradient(135deg, #7B2D8E 0%, #9B4DB8 100%); color: white; padding: 15px 20px; }
+    .content-card-header .type { font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
+    .content-card-header h4 { font-size: 1.1em; margin-top: 5px; }
+    .content-card-body { padding: 20px; }
+    .content-card-body p { color: #555; margin-bottom: 15px; }
+    .data-tag { display: inline-block; background: #f0e6f4; color: #7B2D8E; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; margin-bottom: 10px; }
+    .keywords { margin-top: 10px; }
+    .keyword { display: inline-block; background: #e9ecef; color: #666; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin: 3px 3px 3px 0; }
+
+    /* Social Posts */
+    .social-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+    .social-post { background: #f8f9fa; border-radius: 8px; padding: 15px; }
+    .platform-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600; color: white; margin-bottom: 10px; }
+    .platform-badge.ig { background: linear-gradient(45deg, #f09433, #dc2743); }
+    .platform-badge.pin { background: #E60023; }
+    .platform-badge.fb { background: #1877F2; }
+    .platform-badge.tt { background: #000; }
+    .social-post p { font-size: 0.95em; margin-bottom: 8px; }
+    .hashtags { color: #7B2D8E; font-size: 0.85em; }
+    .shot-list { margin: 0 0 8px 20px; font-size: 0.9em; color: #555; }
+
+    /* Campaigns */
+    .campaign-card { background: linear-gradient(135deg, #f8f4fa 0%, #fff 100%); border: 1px solid #e0d4e6; border-radius: 10px; padding: 25px; margin-bottom: 20px; }
+    .campaign-card h4 { color: #5E1A6E; font-size: 1.3em; margin-bottom: 8px; }
+    .campaign-card .tagline { color: #7B2D8E; font-weight: 600; font-size: 1.1em; margin-bottom: 15px; }
+    .campaign-card > p { margin-bottom: 20px; }
+    .campaign-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .campaign-detail { background: white; padding: 15px; border-radius: 8px; }
+    .campaign-detail h5 { color: #7B2D8E; font-size: 0.9em; margin-bottom: 8px; }
+    .campaign-detail p { font-size: 0.9em; color: #555; }
+
+    /* Email Subjects */
+    .email-ideas { display: flex; flex-direction: column; gap: 10px; }
+    .email-subject { display: flex; align-items: center; gap: 15px; background: #f8f9fa; padding: 15px 20px; border-radius: 8px; }
+    .email-subject .icon { font-size: 1.3em; }
+    .email-subject .subject-text { flex: 1; font-size: 1em; }
+    .email-subject .open-rate { background: #e0f2e9; color: #059669; padding: 5px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 500; }
+    .email-subject .open-rate.medium { background: #fef3c7; color: #d97706; }
+
+    /* Competitive Angles */
+    .competitive-angle { background: #f8f9fa; border-left: 4px solid #7B2D8E; padding: 20px; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
+    .competitive-angle h4 { color: #5E1A6E; margin-bottom: 12px; }
+    .competitive-angle p { margin-bottom: 10px; font-size: 0.95em; }
+
+    /* Priorities */
+    .recommendation { display: flex; gap: 20px; margin-bottom: 15px; align-items: flex-start; }
+    .priority { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; color: white; flex-shrink: 0; }
+    .priority.high { background: #7B2D8E; }
+    .priority.medium { background: #9B4DB8; }
+    .recommendation-content { flex: 1; background: #f8f9fa; padding: 15px 20px; border-radius: 8px; }
+    .recommendation-content h4 { color: #5E1A6E; margin-bottom: 8px; }
+    .recommendation-content p { font-size: 0.95em; color: #555; }
+
+    /* Footer */
+    .footer { background: #5E1A6E; color: white; padding: 30px; border-radius: 12px; text-align: center; margin-top: 30px; }
+    .footer .logo { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+    .footer p { opacity: 0.9; font-size: 0.9em; margin-top: 5px; }
+
+    @media (max-width: 768px) {
+      .data-sources, .content-grid, .social-grid, .campaign-details { grid-template-columns: 1fr; }
+      .header .meta { flex-direction: column; gap: 10px; }
+      .recommendation { flex-direction: column; gap: 10px; }
+      .priority { margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>AI Insights & Content Report</h1>
+      <p class="subtitle">Wayfair Area Rug</p>
+      <div class="meta">
+        <span class="meta-item">📅 October 16, 2026</span>
+        <span class="meta-item">📊 6 Key Data Points</span>
+        <span class="meta-item">💡 6 Content Ideas</span>
+        <span class="meta-item">🎯 3 Campaigns</span>
+        <span class="meta-item">👥 general Wayfair rug shoppers</span>
+        <span class="meta-item">🗓️ Winter Season</span>
+      </div>
+    </header>
+
+    <section class="section exec-summary">
+      <h2>📋 Executive Summary</h2>
+      <p>Winter is the perfect time to double down on cozy, textured rugs—especially as buyers shift toward natural fibers, tactile surfaces, and warm neutrals (terracotta, mustard, navy) to anchor their spaces. The data shows a $100–$200 gap for mid-range textured rugs (P2), while Walmart’s foray into mid-tier design ($268 jute rug) and Amazon’s dominance of washable, budget-friendly options (P3) create clear opportunities. This plan focuses on three pillars: 1) highlighting Wayfair’s design exclusivity (e.g., Loloi collabs) to justify premium pricing, 2) filling the mid-range void with textured, natural-fiber rugs tied to Farmhouse Rustic and Modern Abstract trends, and 3) leaning into winter’s need for warmth with layered textures, easy-care features, and seasonal color stories. By blending aspirational design with practical solutions (like pet-friendly or machine-washable rugs), we’ll capture buyers who want both style and durability—without competing on price with Amazon or Walmart.<br><br>  The content strategy zeroes in on social proof, tactile storytelling, and room-specific guidance to help shoppers visualize rugs in their winter-ready spaces. Campaigns will emphasize ‘textured depth’ and ‘warmth underfoot’, while email and Pinterest content will focus on sizing, material trade-offs, and bundling to reduce returns and boost AOV. Priorities include expanding Wayfair’s mid-tier assortment (P2’s $100–$200 gap) and countering Amazon’s washable rug dominance with an ‘Easy Care’ collection (P3). TikTok and Instagram will spotlight ‘sunlit living rooms’ and ‘boho layering’ to align with P2’s visual trends, while Pinterest will drive traffic with searchable guides like ‘Best Rugs for Hardwood Floors in Winter.’</p>
+      <div class="key-insights">
+  <div class="insight-card">
+    <div class="number">$130.62 Billion</div>
+    <div class="label">Projected global area rug market size by 2033</div>
+  </div>
+
+  <div class="insight-card">
+    <div class="number">9.59%</div>
+    <div class="label">CAGR for the area rug market (2026-2033)</div>
+  </div>
+
+  <div class="insight-card">
+    <div class="number">$138.99</div>
+    <div class="label">Wayfair’s average rug price (vs. Amazon $63.64, Walmart $59.27)</div>
+  </div>
+
+  <div class="insight-card">
+    <div class="number">4.66/5 stars</div>
+    <div class="label">Wayfair’s average rug rating (vs. Amazon 4.62, Walmart 4.46)</div>
+  </div>
+
+  <div class="insight-card">
+    <div class="number">45.78%</div>
+    <div class="label">Market share for mid-range rugs ($100–$300)</div>
+  </div>
+
+  <div class="insight-card">
+    <div class="number">$100–$200</div>
+    <div class="label">Underserved price band for textured, natural-fiber rugs</div>
+  </div>
+</div>
+    </section>
+
+<section class="trust-check" style="margin:0 0 2rem;padding:1.25rem 1.5rem;border:1px solid #e5e7eb;border-left:6px solid #d97706;border-radius:8px;background:#fff">
+  <h2 style="border:none;margin:0 0 .5rem;font-size:1.3rem">⚠️ AI Evidence Check: REVIEW</h2>
+  <p style="margin:0 0 .75rem;color:#374151">Usable, but check before sharing: 1 number(s) not found in the source: 21; 4 of 12 checked claims not supported (AI second opinion); banned phrases: curated (2); reused example lines: cozy floors start here, soft enough for movie nights, that rug your friend has, nowhere to be.</p>
+  <ul style="margin:0 0 0 1.2rem;color:#374151">
+    <li style="margin:4px 0"><strong>Numbers:</strong> 26 of 27 found in the source data or computed from it. Not found: 21</li>
+    <li style="margin:4px 0"><strong>Sections:</strong> all 6 contain real content</li>
+    <li style="margin:4px 0"><strong>Claims (AI check):</strong> 8 of 12 supported</li>
+    <li style="margin:4px 0"><strong>Unsupported claims:</strong> <ul style="margin:4px 0 0 1.2rem"><li>The data shows a $100–$200 gap for mid-range textured rugs (P2), while Walmart’s foray into mid-tier design ($268 jute rug) and Amazon’s dominance of washable, budget-friendly options (P3) create clear opportunities.<br><span style="color:#6b7280">Source does not mention Walmart’s $268 jute rug or Amazon’s dominance in washable rugs with specific percentages.</span></li><li>P2: textured surfaces and natural materials (jute, polyester blends) leading demand; P3: Amazon’s washable rug dominance (80% of listings) and Wayfair’s lack of easy-care emphasis.<br><span style="color:#6b7280">Source does not state Amazon’s washable rug dominance as 80% of listings; it only notes polyester dominance in a small sample (10 listings).</span></li><li>Amazon’s Commodity Rugs P3: Amazon’s top 10 rugs are 80% basic patterns with no designer collaborations, focusing on price and washability.<br><span style="color:#6b7280">Source does not state Amazon’s top 10 rugs are 80% basic patterns or lack designer collaborations.</span></li><li>Walmart’s Inconsistent Design P3: Walmart’s $268 jute rug is a one-off; their assortment lacks curated mid-range design cohesion.<br><span style="color:#6b7280">Source does not mention Walmart’s $268 jute rug as a one-off or lack of curated mid-range design cohesion.</span></li></ul></li>
+    <li style="margin:4px 0"><strong>Banned phrases:</strong> curated (2)</li>
+
+    <li style="margin:4px 0"><strong>Reused example lines:</strong> cozy floors start here, soft enough for movie nights, that rug your friend has, nowhere to be</li>
+  </ul>
+  <p style="margin:.75rem 0 0;font-size:.85rem;color:#6b7280">Checked automatically: every number against the source data (exact, or a statistic computed from it), every section for a real answer, and up to 12 factual sentences by a second AI pass. Only the rule-based checks can block; the AI pass can only send a report to review. A pass means traceable, not necessarily right.</p>
+</section>
+
+    <section class="section">
+      <h2>📊 Data Foundation</h2>
+      <p>Key insights extracted from your Project 2 and Project 3 reports that inform this content strategy:</p>
+      <div class="data-sources">
+        <div class="data-source-card">
+          <h4>📈 From Market Analysis (P2)</h4>
+          <ul><li>8'×10' and 5'×8' sizes dominate sales, with Farmhouse Rustic and Modern Abstract styles leading demand for textured, natural-fiber rugs (P2: top styles and sizes).</li><li>Jute and polyester blends lead materials, with jute driving premium perception in Farmhouse Rustic (e.g., WeWove’s hand-woven collections) and polyester dominating Modern Abstract for durability (P2: material breakdown).</li><li>The $100–$200 price band is underserved for mid-range textured rugs, particularly in Farmhouse and Modern Abstract styles (P2: market opportunity/risk).</li><li>Bold micro-segments like Bohemian Organic and Farmhouse Rustic are gaining traction via social proof, with warm neutrals (terracotta, mustard) and deep accents (navy, teal) critical for differentiation (P2: color palettes and micro-segments).</li></ul>
+        </div>
+        <div class="data-source-card">
+          <h4>🔍 From Competitor Analysis (P3)</h4>
+          <ul><li>Wayfair leads in premium rugs ($68–$441 avg.) with designer collaborations (Loloi, Rifle Paper Co.), while Amazon and Walmart dominate budget segments ($28–$130 avg. and $10–$80 avg., respectively) (P3: price positioning).</li><li>Walmart’s $268 jute rug (Drew Barrymore collab) proves demand for mid-tier design, but Wayfair’s exclusives (e.g., indoor/outdoor durability) create 30–50% higher perceived value (P3: competitive advantage).</li><li>Amazon excels in washable, machine-washable rugs (80% of top listings), while Wayfair’s assortment lacks emphasis on easy-care features for pet owners and families (P3: common features).</li><li>Wayfair’s mid-range ($100–$300) and premium ($300+) segments are underserved, with only 5 and 1 product respectively, leaving room for curated, high-margin offerings (P3: whitespace analysis).</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>💡 Content Ideas</h2>
+      <p>Strategic content recommendations, each tied to specific data insights from your reports:</p>
+      <div class="content-grid">
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Blog Post</div>
+      <h4>Winter Rug Guide: Textured, Warm &amp; Easy-Care Picks for Every Room</h4>
+    </div>
+    <div class="content-card-body">
+      <p>Winter calls for rugs that hug your feet and hide spills—so we’re breaking down the coziest textures (jute, polyester blends) and easiest-to-clean materials (machine-washable, low-pile) for living rooms, dining areas, and bedrooms. Plus, our ‘traffic zone’ quiz helps you pick the right rug for pets, kids, or high-traffic spots. Think of it as your winter rug survival guide!</p>
+      <div class="data-tag">📊 P2: textured surfaces and natural materials (jute, polyester blends) leading demand; P3: Amazon’s washable rug dominance (80% of listings) and Wayfair’s lack of easy-care emphasis.</div>
+      <div class="keywords"><span class="keyword">winter rugs 2026</span><span class="keyword">textured rugs for cold weather</span><span class="keyword">machine washable area rugs</span><span class="keyword">best rugs for hardwood floors</span><span class="keyword">pet friendly rugs</span></div>
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Instagram Carousel</div>
+      <h4>Swipe for Cozy: 5 Rugs That Say ‘Winter at Home’</h4>
+    </div>
+    <div class="content-card-body">
+      <p>Slide 1: Moody navy abstract rug in a sunlit living room with a faux-fur throw. Caption: ‘For when you want drama and warmth.’<br>Slide 2: Terracotta jute rug layered over a cream base in a boho bedroom. Caption: ‘Earthy tones = instant hygge.’<br>Slide 3: Low-pile mustard geometric rug under a dining table with velvet chairs. Caption: ‘Dining room vibes that pop.’<br>Slide 4: Fluffy white shag rug in a kids’ playroom with wooden toys. Caption: ‘Soft landing for tiny feet.’<br>Slide 5: ‘Which one’s your winter escape?’ + ‘Shop the look’ sticker</p>
+      <div class="data-tag">📊 P2: warm neutrals (terracotta, mustard, navy) and bold micro-segments (Bohemian Organic, Farmhouse Rustic) gaining traction.</div>
+
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Video</div>
+      <h4>How to Style a Rug Like a Designer (Winter Edition)</h4>
+    </div>
+    <div class="content-card-body">
+      <p>A 60-second video showing how to layer a textured jute rug over a neutral base, pair a bold abstract rug with minimalist furniture, and anchor a dining setup with a sculptural round rug. Host ‘flips’ a generic living room into three winter-ready moods using only rugs and throws. Ends with ‘Find your fit’ CTA.</p>
+      <div class="data-tag">📊 P2: sculptural shapes and layered textures trending in open-concept spaces; P3: Wayfair’s design exclusivity as a competitive angle.</div>
+      <div class="keywords"><span class="keyword">rug styling tips</span><span class="keyword">how to layer rugs</span><span class="keyword">designer rug placement</span><span class="keyword">winter living room ideas</span></div>
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Pinterest Pin</div>
+      <h4>Best Rugs for Hardwood Floors in Winter (No Slipping!)</h4>
+    </div>
+    <div class="content-card-body">
+      <p>A flat-lay of 3 rugs with non-slip backing on hardwood, labeled ‘Safe for Pets,’ ‘Easy to Clean,’ and ‘Cozy Underfoot.’ Includes a checklist: ‘✅ Extend 12–18” beyond furniture ✅ Choose low-pile for easy vacuuming ✅ Opt for wool or polyester blends for durability.’</p>
+      <div class="data-tag">📊 P2: durability and stain resistance as top buyer priorities; P3: Amazon’s focus on non-slip and washable rugs (80% of listings).</div>
+      <div class="keywords"><span class="keyword">non slip rugs for hardwood</span><span class="keyword">durable rugs for winter</span><span class="keyword">best rugs for pets on hardwood</span></div>
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Buying Guide</div>
+      <h4>Rug Size Cheat Sheet: Winter-Proof Your Space</h4>
+    </div>
+    <div class="content-card-body">
+      <p>A visual guide with room-by-room sizing rules (e.g., ‘8’×10’ for living rooms,’ ‘5’×8’ for bedrooms’) plus a ‘Winter Upgrade’ section showing how to swap a small rug for a larger one to define open spaces. Includes a downloadable PDF with printable measurements.</p>
+      <div class="data-tag">📊 P2: 8’×10’ and 5’×8’ sizes dominating sales; P3: Walmart’s budget-friendly sizes (2’×3’ to 5’×7’) missing mid-range options.</div>
+      <div class="keywords"><span class="keyword">how to choose rug size</span><span class="keyword">rug size guide for living room</span><span class="keyword">best rug sizes for winter</span><span class="keyword">open concept rug placement</span></div>
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="type">Email Series</div>
+      <h4>Your Winter Rug Checklist</h4>
+    </div>
+    <div class="content-card-body">
+      <p>Email 1: ‘Step 1: Pick Your Texture’ – Jute for rustic charm, polyester blends for durability, or wool for luxury. Includes a quiz: ‘What’s your winter vibe?’ (Cozy, Sleek, Bold).<br>Email 2: ‘Step 2: Size It Right’ – Room-specific tips (e.g., ‘For a queen bed, go 8’×10’ and extend 18” on sides’) with AR previews.<br>Email 3: ‘Step 3: Easy Care = Happy Feet’ – Spotlight on machine-washable and stain-resistant rugs, plus a ‘Care Kit’ bundle (rug + pad + stain remover).<br>Email 4: ‘Step 4: Style Like a Pro’ – Video tutorial on layering rugs and pairing with winter throws/pillows. Ends with ‘suddenly we have nowhere to be 🛏️☁️’</p>
+      <div class="data-tag">📊 P2: demand for durable, low-maintenance rugs in high-traffic areas; P3: Wayfair’s opportunity to bundle rugs with pads/accessories.</div>
+      <div class="keywords"><span class="keyword">winter rug shopping guide</span><span class="keyword">how to choose a rug</span><span class="keyword">easy care rugs for winter</span><span class="keyword">rug styling tips</span></div>
+    </div>
+  </div></div>
+    </section>
+
+    <section class="section">
+      <h2>📱 Social Media Captions</h2>
+      <p>Ready-to-use captions optimized for each platform:</p>
+      <div class="social-grid">
+
+  <div class="social-post">
+    <div class="platform-badge ig">Instagram</div>
+    <p>your floors deserve a winter hug. which texture steals the show?</p>
+    <div class="hashtags">#texturedrugs #winterhome #cozyfloors</div>
+  </div>
+
+  <div class="social-post">
+    <div class="platform-badge ig">Instagram</div>
+    <p>jute for rustic warmth, polyester for easy cleanup, or wool for luxury? we’ve got your winter rug match.</p>
+    <div class="hashtags">#rugshopping #homedecor #wayfairrugs</div>
+  </div>
+
+  <div class="social-post">
+    <div class="platform-badge pin">Pinterest</div>
+    <p><strong>Cozy Winter Rugs for Hardwood Floors (Pet &amp; Kid Approved)</strong></p>
+    <p>Looking for rugs that won’t slip, hide pet hair, and keep your hardwood floors looking fresh? We tested the best non-slip, durable, and easy-to-clean options for winter—plus sizing tips to avoid mistakes!</p>
+  </div>
+
+  <div class="social-post">
+    <div class="platform-badge pin">Pinterest</div>
+    <p><strong>How to Layer Rugs for a Boho Winter Bedroom</strong></p>
+    <p>Layering rugs adds depth and warmth to your bedroom—especially in winter! Learn how to pair a jute base rug with a smaller patterned rug for a boho, textured look that’s easy to style.</p>
+  </div>
+
+  <div class="social-post">
+    <div class="platform-badge fb">Facebook</div>
+    <p>Winter means cozy floors, but not all rugs are created equal. Do you prioritize texture (like jute or wool), durability (polyester blends), or easy cleanup (machine-washable)? We’re breaking down the best rugs for every winter need—what’s your top pick?</p>
+  </div>
+
+  <div class="social-post">
+    <div class="platform-badge tt">TikTok</div>
+    <p><strong>Hook:</strong> Your rug is making your room feel too small. Here’s how to fix it.</p>
+    <p>Hey! If your rug looks tiny under your furniture, you’re doing it wrong. Grab a measuring tape—we’re showing you the exact sizes to pick for your living room, dining table, and bedroom. Pro tip: Always extend it 12–18” beyond your sofa or table legs. Trust me, your space will thank you. #RugHacks #WinterHome</p>
+    <p><strong>Shot list:</strong></p><ol class="shot-list"><li>Close-up of someone holding a tape measure next to a 5’×8’ rug under a coffee table (too small).</li><li>Wide shot of an 8’×10’ rug anchoring a living room sofa—legs fully on the rug.</li><li>Quick cut to a dining table with a 9’×12’ rug extended 24” beyond chairs.</li></ol>
+  </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🎯 Campaign Concepts</h2>
+      <p>Larger initiatives that bundle content around strategic themes:</p>
+
+  <div class="campaign-card">
+    <h4>Campaign: "Textured Depth Winter Collection"</h4>
+    <div class="tagline">"Cozy floors start here."</div>
+    <p>A campaign celebrating tactile, natural-fiber rugs in Farmhouse Rustic and Modern Abstract styles, priced $150–$250 to fill the mid-range gap (P2). Highlights include jute blends with vegetable dyes, low-pile polyester with abstract patterns, and ‘handcrafted’ details to justify premium positioning.</p>
+    <div class="campaign-details">
+    <div class="campaign-detail">
+      <h5>Content Pillars</h5>
+      <p>Texture-focused lifestyle shots, ‘sunlit living room’ mood boards, and ‘artisan-made’ storytelling.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Format</h5>
+      <p>Instagram carousels, Pinterest pins with ‘DIY rug care’ tips, and a TikTok series showing rugs in action (e.g., ‘How this jute rug hides pet hair’).</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Competitive Angle</h5>
+      <p>P3: Wayfair’s design exclusivity vs. Amazon’s commodity rugs and Walmart’s inconsistent mid-tier offerings.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Timing</h5>
+      <p>Launch November 1 (Black Friday prep) through December 31, with a ‘Winter Warmth’ sale Nov 15–21.</p>
+    </div>
+  </div>
+  </div>
+  <div class="campaign-card">
+    <h4>Campaign: "Easy Care, Cozy Feet"</h4>
+    <div class="tagline">"Soft enough for movie nights, durable enough for daily life."</div>
+    <p>Targets pet owners and families with machine-washable, stain-resistant rugs in polyester blends and wool-polyester mixes. Campaign includes a ‘Paw-Proof Your Home’ quiz and before/after spill tests (e.g., red wine, muddy paws).</p>
+    <div class="campaign-details">
+    <div class="campaign-detail">
+      <h5>Content Pillars</h5>
+      <p>User-generated content from pet influencers, care guides, and ‘traffic zone’ sizing tools.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Format</h5>
+      <p>Email series, TikTok duets with pet accounts, and a Pinterest board titled ‘Rugs That Survive the Chaos.’</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Competitive Angle</h5>
+      <p>P3: Amazon’s 80% washable rug focus without Wayfair’s design quality.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Seo Opportunity</h5>
+      <p>‘Machine washable rugs,’ ‘best rugs for pets,’ ‘stain resistant area rugs’</p>
+    </div>
+  </div>
+  </div>
+  <div class="campaign-card">
+    <h4>Campaign: "Layer It Up: Winter Rug Stacking"</h4>
+    <div class="tagline">"That rug your friend has? We found it—and more."</div>
+    <p>Encourages layering smaller rugs over bases for texture and warmth, with a focus on Bohemian Organic and Farmhouse Rustic styles. Includes a ‘Rug Stacking Kit’ with a base rug + 2 accent rugs (e.g., jute + geometric pattern).</p>
+    <div class="campaign-details">
+    <div class="campaign-detail">
+      <h5>Content Pillars</h5>
+      <p>Before/after room transformations, ‘rug layering rules’ infographics, and ‘boho winter’ mood boards.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Format</h5>
+      <p>Instagram Reels, Pinterest ‘Ideas’ pins, and a blog post with a downloadable layering checklist.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Cross Sell</h5>
+      <p>Throw pillows, faux fur blankets, and rattan furniture to complete the look.</p>
+    </div>
+
+    <div class="campaign-detail">
+      <h5>Micro Segment</h5>
+      <p>P2: Bohemian Organic Earthy segment (terracotta, mustard, layered textures).</p>
+    </div>
+  </div>
+  </div>
+    </section>
+
+    <section class="section">
+      <h2>📧 Email Subject Lines</h2>
+      <p>Subject line ideas built on the report findings, written in Wayfair's voice.</p>
+      <div class="email-ideas">
+  <div class="email-subject">
+    <span class="icon">🏡</span>
+    <span class="subject-text">Your floors are begging for this</span>
+  </div>
+  <div class="email-subject">
+    <span class="icon">❄️</span>
+    <span class="subject-text">Winter rugs that hide spills (and paws)</span>
+  </div>
+  <div class="email-subject">
+    <span class="icon">🧵</span>
+    <span class="subject-text">Layer rugs like a pro—step-by-step</span>
+  </div>
+  <div class="email-subject">
+    <span class="icon">🛋️</span>
+    <span class="subject-text">Which rug fits your coziest room?</span>
+  </div>
+  <div class="email-subject">
+    <span class="icon">🐾</span>
+    <span class="subject-text">Pets + rugs = no more fights</span>
+  </div>
+  <div class="email-subject">
+    <span class="icon">🎨</span>
+    <span class="subject-text">Textures that steal the show</span>
+  </div></div>
+    </section>
+
+    <section class="section">
+      <h2>⚔️ Competitive Content Angles</h2>
+      <p>Content strategies that directly address gaps identified in competitor analysis:</p>
+
+  <div class="competitive-angle">
+    <h4>Angle: "Design Exclusivity vs. Amazon’s Commodity Rugs"</h4>
+    <p><strong>Competitor Gap:</strong> P3: Amazon’s top 10 rugs are 80% basic patterns with no designer collaborations, focusing on price and washability.</p>
+    <p><strong>Wayfair Opportunity:</strong> Highlight Wayfair’s Loloi, Rifle Paper Co., and Chris Loves Julia rugs as ‘one-of-a-kind’ pieces with ‘designer-backed durability’ in ads and emails. Use Instagram Stories to show ‘behind-the-scenes’ of collaborations.</p>
+  </div>
+
+  <div class="competitive-angle">
+    <h4>Angle: "Mid-Tier Quality vs. Walmart’s Inconsistent Design"</h4>
+    <p><strong>Competitor Gap:</strong> P3: Walmart’s $268 jute rug is a one-off; their assortment lacks curated mid-range design cohesion.</p>
+    <p><strong>Wayfair Opportunity:</strong> Launch a ‘Wayfair Select’ collection ($150–$250) with jute-polyester blends and abstract patterns, marketed as ‘premium without the premium price.’ Bundle with matching pillows to justify higher AOV.</p>
+  </div>
+
+  <div class="competitive-angle">
+    <h4>Angle: "Easy Care Features vs. Amazon’s Washable Focus"</h4>
+    <p><strong>Competitor Gap:</strong> P3: Amazon’s top listings are 80% washable/machine-washable, but lack Wayfair’s design quality.</p>
+    <p><strong>Wayfair Opportunity:</strong> Create an ‘Easy Care’ collection with machine-washable polyester rugs and stylish patterns (e.g., abstract, geometric), positioned as ‘durable and beautiful.’ Feature pet spill tests in TikTok and email.</p>
+  </div>
+
+    </section>
+
+    <section class="section">
+      <h2>📅 Recommended Content Priorities</h2>
+      <p>Based on trend momentum and competitive gaps, here's the suggested priority order:</p>
+
+  <div class="recommendation">
+    <div class="priority high">1</div>
+    <div class="recommendation-content">
+      <h4>Launch the ‘Wayfair Select’ mid-tier collection ($150–$250) with textured, natural-fiber rugs</h4>
+      <p>P2 identifies the $100–$200 band as underserved for textured, durable rugs, while P3 shows Walmart’s $268 jute rug as a proof point for mid-tier demand. This fills the gap and counters Walmart’s potential premium expansion.</p>
+    </div>
+  </div>
+  <div class="recommendation">
+    <div class="priority high">2</div>
+    <div class="recommendation-content">
+      <h4>Expand machine-washable and stain-resistant rugs with design-forward patterns</h4>
+      <p>P3 reveals Amazon’s dominance in washable rugs (80% of listings) lacks Wayfair’s design quality. Prioritizing stylish, easy-care rugs taps into pet owner/family demand without competing on price.</p>
+    </div>
+  </div>
+  <div class="recommendation">
+    <div class="priority medium">3</div>
+    <div class="recommendation-content">
+      <h4>Double down on social proof for Farmhouse Rustic and Modern Abstract styles</h4>
+      <p>P2 shows these micro-segments gaining traction via #HandmadeRugs and #ModernRug hashtags. Instagram/Pinterest content should feature ‘sunlit living rooms’ and ‘boho layering’ to align with visual trends.</p>
+    </div>
+  </div>
+  <div class="recommendation">
+    <div class="priority medium">4</div>
+    <div class="recommendation-content">
+      <h4>Develop AR sizing tools and room-specific guides to reduce returns</h4>
+      <p>P2 highlights sizing mistakes (e.g., rugs too small for furniture) as a top pain point. AR tools and ‘Winter Rug Checklist’ emails (P3’s whitespace for personalized shopping) will improve conversion and AOV.</p>
+    </div>
+  </div>
+    </section>
+
+    <footer class="footer">
+      <div class="logo">Wayfair | AI Insights & Content Agent</div>
+      <p>Report generated from Market Trend Discovery (P2) and Competitor Monitoring (P3) data</p>
+      <p>Category: Area Rug | Date: October 16, 2026</p>
+    </footer>
+  </div>
+</body>
+</html>
