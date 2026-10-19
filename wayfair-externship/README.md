@@ -97,21 +97,15 @@ flowchart LR
 
 ## Why it matters in a real work environment
 
-The same job done three ways: an analyst researching by hand, the workflow built in the externship, and the same workflow with Rug Intel on top.
+The same job done three ways: an analyst researching by hand, the workflow built in the externship, and the same workflow with Rug Intel on top. Speed is covered in the time table below; this table is about trust and usability.
 
 | Task | Analyst doing research by hand | Externship workflow | With Rug Intel |
 |---|---|---|---|
 | **Gathering data** | Browses Wayfair, Amazon and Walmart and copies listings into a spreadsheet | Pulls 10 listings per retailer automatically | Same, and every run is saved to shared tables, so history builds up |
-| **Producing the report** | Hours of reading, comparing and writing | About 5–7 minutes per run | Same speed, started from Slack; results post back to the channel |
 | **Who can start it** | The analyst | Someone with n8n access | Anyone in the Slack workspace (`/rug-intel deep-dive`) |
 | **Trusting the numbers** | The analyst double-checks their own work | Looks finished, but nothing checks whether a number was invented | Every number traced to the data; each report scored **PASS**, **REVIEW** or **BLOCK** with the failing items named |
 | **Bad or missing sections** | Noticed on review, if at all | A run can say "success" with a section empty | Run marked **degraded**, non-answers **blocked**, crashes trigger an alert |
-| **Follow-up questions** | A new research request | Rerun the whole workflow | `/rug-intel ask` answers from stored listings in seconds, with listing IDs cited |
-| **Staying current** | Redo the research | Someone remembers to rerun it | Monday digest posts price moves, new and removed listings, rating changes |
 | **Sharing results** | Email a deck or spreadsheet | Download an HTML file and send it | Posted in the team channel, with a link to the live dashboard |
-| **The dashboard** | Built by hand in slides or sheets | Rebuilt by uploading two reports | Live; updates after every run with run health and trust verdicts |
-| **Content plan** | A marketer writes it from the report | AI drafts it from both reports | Same, with unsupported stats, banned phrases and copied lines flagged |
-| **Adding a category** | Start the research from scratch | Copy and edit the workflow | Add one row to `category_config` (Outdoor Rug took one row) |
 
 ### ⏱ Time per task
 
