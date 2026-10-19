@@ -86,66 +86,29 @@ flowchart LR
 
 ## Why it matters in a real work environment
 
-Most AI demos end with a report. At a company, a report is only the start: someone has to find it, decide whether to believe it, and act on it before the market moves. Rug Intel is built around that part of the job.
+The same job done three ways: an analyst researching by hand, the workflow built in the externship, and the same workflow with Rug Intel on top.
 
-### 1. Answers where people already work
+| Task | Analyst doing research by hand | Externship workflow | With Rug Intel |
+|---|---|---|---|
+| **Gathering data** | Browses Wayfair, Amazon and Walmart and copies listings into a spreadsheet | Pulls 10 listings per retailer automatically | Same, and every run is saved to shared tables, so history builds up |
+| **Producing the report** | Hours of reading, comparing and writing | About 5–7 minutes per run | Same speed, started from Slack; results post back to the channel |
+| **Who can start it** | The analyst | Someone with n8n access | Anyone in the Slack workspace (`/rug-intel deep-dive`) |
+| **Trusting the numbers** | The analyst double-checks their own work | Looks finished, but nothing checks whether a number was invented | Every number traced to the data; each report scored **PASS**, **REVIEW** or **BLOCK** with the failing items named |
+| **Bad or missing sections** | Noticed on review, if at all | A run can say "success" with a section empty | Run marked **degraded**, non-answers **blocked**, crashes trigger an alert |
+| **Follow-up questions** | A new research request | Rerun the whole workflow | `/rug-intel ask` answers from stored listings in seconds, with listing IDs cited |
+| **Staying current** | Redo the research | Someone remembers to rerun it | Monday digest posts price moves, new and removed listings, rating changes |
+| **Sharing results** | Email a deck or spreadsheet | Download an HTML file and send it | Posted in the team channel, with a link to the live dashboard |
+| **The dashboard** | Built by hand in slides or sheets | Rebuilt by uploading two reports | Live; updates after every run with run health and trust verdicts |
+| **Content plan** | A marketer writes it from the report | AI drafts it from both reports | Same, with unsupported stats, banned phrases and copied lines flagged |
+| **Adding a category** | Start the research from scratch | Copy and edit the workflow | Add one row to `category_config` (Outdoor Rug took one row) |
 
-Category, supply and marketing teams live in Slack, not in n8n. Instead of asking an analyst to rerun a workflow and send a file, anyone can type:
+**Why this matters for a team:**
+- **Answers come to the team.** People ask in Slack, where they already work, and the whole channel sees the same checked answer.
+- **Nobody acts on an invented number.** The trust verdict shows what to double-check before an AI number reaches a pricing deck or a buying decision. In testing it caught an average price that was $15 off and a made-up "80%" claim.
+- **Failures are visible.** A silent failure is worse than a crash, because people keep trusting partial output. Every run logs what it actually produced.
+- **It scales without new engineering.** Another catalog team connects its own data feed, adds its categories as config rows and adjusts a few rug-specific prompt words. The rest carries over unchanged.
 
-```
-/rug-intel ask which Walmart area rugs under $50 rate best?
-/rug-intel deep-dive outdoor rug focus: weather resistant
-/rug-intel status
-```
-
-The answer posts in the channel, so the whole team sees the same answer at the same time, with links to the full report and the dashboard. Nobody needs n8n access or training to use it.
-
-### 2. Numbers you can act on
-
-The biggest risk with AI in business is a confident, wrong number reaching a pricing deck or a buying decision. Every Rug Intel output carries a trust verdict:
-
-| Verdict | Meaning | What the team does |
-|---|---|---|
-| **PASS** | Every number traces back to the collected data | Use it |
-| **REVIEW** | Some numbers or claims couldn't be confirmed | Check the flagged items before sharing |
-| **BLOCK** | A section is missing, empty or unsupported | Don't share it; rerun or investigate |
-
-The check names the specific number that failed, so reviewing takes minutes instead of re-verifying the whole report. In testing it caught an average price that was off by $15 and a made-up "80%" claim before either reached anyone.
-
-### 3. A team that knows what changed
-
-Competitor prices and listings change weekly. The Monday digest compares this week's listings with last week's and posts what moved: price drops, new competitor products, removed listings and rating changes. Teams start the week with what changed instead of discovering it a month later.
-
-### 4. One source of truth
-
-Every run writes to shared tables, so the dashboard, the Slack answers and the digest all read the same data. When someone asks "where did this number come from?", the answer is a specific run, a specific listing and its evidence verdict, not a screenshot in an email thread.
-
-### 5. Failures that can't hide
-
-Free and fast AI models sometimes fail quietly: a run "succeeds" with a section missing. In production, a silent failure is worse than a crash because people keep trusting stale or partial output. Rug Intel logs what every run actually produced, marks partial runs as **degraded** in `/rug-intel status` and on the dashboard, and alerts on crashes through the error handler.
-
-### 6. Scales to other teams without new engineering
-
-Categories are configuration, not code. Adding Outdoor Rug took one row in `category_config`. Another catalog team (for example Mattresses or Lighting) would:
-
-1. connect their own catalog and competitor data feed,
-2. add their categories as config rows,
-3. adjust a few rug-specific prompt words (for example sizes and materials),
-
-and reuse the Evidence Check, Slack integration, digest, dashboard, run log and error handler unchanged.
-
-### Who uses it, and how
-
-| Role | Before | With Rug Intel |
-|---|---|---|
-| **Category manager** | Waits for an analyst to run a report; can't tell which numbers to trust | Asks in Slack, gets a checked answer and a trust verdict |
-| **Supply / inventory planner** | Hears about trend and competitor shifts late, after demand has moved | Gets weekly, checked demand and price signals early enough to plan stock and supplier orders |
-| **Marketing** | AI content mixes real stats with invented ones | Content plans arrive with every number checked and banned or copied phrases flagged |
-| **Leadership** | Sees a different number in every deck | One live dashboard and one set of shared tables behind every answer |
-
-### What it doesn't do yet
-
-Rug Intel provides demand, trend and competitor-price signals. It doesn't see Wayfair's inventory, lead times, sales or landed costs. Those would come from Wayfair's internal data in a production version, which is the next step listed below.
+**What it doesn't do yet:** Rug Intel provides trend, demand and competitor-price signals. It doesn't see Wayfair's inventory, lead times, sales or landed costs; those would come from Wayfair's internal data in a production version.
 
 ## Repository layout
 
