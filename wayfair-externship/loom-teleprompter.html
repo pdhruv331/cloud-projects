@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loom Teleprompter</title>
+<style>
+  :root { --bg: #111; --text: #f5f5f5; --cue: #8a8a8a; --accent: #c084fc; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  #bar { position: fixed; top: 0; left: 0; right: 0; background: #000; color: #bbb; font-size: 13px; padding: 8px 16px; display: flex; gap: 16px; flex-wrap: wrap; z-index: 2; }
+  #bar b { color: var(--accent); }
+  #script { max-width: 900px; margin: 0 auto; padding: 45vh 24px 70vh; font-size: var(--size, 34px); line-height: 1.5; }
+  .time { color: var(--accent); font-size: 0.55em; font-weight: 700; letter-spacing: 0.05em; margin-top: 1.4em; }
+  .cue { color: var(--cue); font-size: 0.55em; margin: 0.2em 0 0.4em; }
+  p { margin-bottom: 0.7em; }
+  #guide { position: fixed; top: 38%; left: 0; right: 0; height: 2px; background: rgba(192,132,252,0.35); pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span><b>Space</b> start / pause</span>
+  <span><b>↑ ↓</b> speed (<span id="speed">3</span>)</span>
+  <span><b>+ −</b> text size</span>
+  <span><b>R</b> back to top</span>
+  <span>Scroll with the trackpad anytime</span>
+</div>
+<div id="guide"></div>
+<div id="script">
+  <div class="time">0:00 · INTRO</div>
+  <div class="cue">Show: the n8n workflow canvas</div>
+  <p>Hi, I'm Dhruv. This is my Phase 4 project for the Wayfair AI Agent Engineering Externship: an AI Insights and Content Agent for the Rugs category.</p>
+  <p>It takes my Phase 2 market trend report and my Phase 3 competitor report and turns them into a content strategy that sounds like Wayfair.</p>
+
+  <div class="time">0:20 · WHAT I FOUND FIRST</div>
+  <div class="cue">Show: hover over Extract Files, AI Content, then Parse Content</div>
+  <p>Before improving anything, I tested the workflow I was given, and it was producing a completely fake report.</p>
+  <p>The uploaded files were read from the wrong place, so both reports reached the AI empty.</p>
+  <p>The prompt was missing an equals sign, so the report text never got inserted.</p>
+  <p>And when the AI's answer couldn't be parsed, the code quietly swapped in a hard-coded report full of made-up stats like "28% year-over-year growth."</p>
+  <p>I fixed all three. Now, if a report is empty or the answer is unusable, the run stops with a clear error instead of faking it.</p>
+
+  <div class="time">0:55 · MY ENHANCEMENTS</div>
+  <div class="cue">Show: the Upload Form, then the AI Content system message</div>
+  <p>Then I made it my own. First, I added Target Audience and Season fields to the form, so the content is aimed at someone specific, like first-time renters in fall.</p>
+  <p>Second, brand voice. I studied Wayfair's blog and Instagram. Wayfair writes like a warm, design-savvy friend: short lines, how the room feels, and soft calls to action like "cozy floors start here."</p>
+  <p>I turned that into a system message with a persona, platform rules for Instagram, Pinterest, Facebook and TikTok, and a list of banned AI phrases like "elevate" and "curated."</p>
+  <p>Third, evidence rules. The agent can only use numbers, prices and brands that appear in my reports, and it gets today's date, so it can't schedule a campaign in the past.</p>
+
+  <div class="time">1:40 · THE QUALITY CHECK</div>
+  <div class="cue">Show: Parse Content, then the Quality Check box in a report</div>
+  <p>My favorite addition is an automatic quality check. Instead of trusting the AI, the workflow audits every answer against the source reports.</p>
+  <p>It flags numbers it can't find, banned phrases that slipped through, past years, and reused example lines, and it shows all of that in a box at the top of the report.</p>
+  <p>That way a category manager knows exactly what to double-check before publishing.</p>
+
+  <div class="time">2:10 · THE OUTPUT</div>
+  <div class="cue">Show: scroll through the latest report</div>
+  <p>Here's the result. The header shows the audience and season.</p>
+  <p>The key metrics, like Wayfair's $138.99 average price against Amazon's $63.64 and Walmart's $59.27, come straight from my reports.</p>
+  <p>The Instagram captions read like Wayfair's real posts, short and casual. TikTok ideas come with a filmable shot list, and each content idea names the report finding it's based on.</p>
+
+  <div class="time">2:45 · WRAP-UP</div>
+  <div class="cue">Show: back to the Quality Check box</div>
+  <p>Compared with the original, this went from a fake report to one grounded in real data, on-brand, and self-checking.</p>
+  <p>The honest limit is that code can confirm a number exists in the reports, not that it's used correctly, so my next step would be a second AI fact-check pass.</p>
+  <p>Thanks for watching.</p>
+</div>
+<script>
+  let running = false, speed = 3, size = 34, last = null;
+  const speedEl = document.getElementById('speed');
+  function step(t) {
+    if (!running) { last = null; return; }
+    if (last !== null) window.scrollBy(0, speed * 12 * (t - last) / 1000);
+    last = t;
+    requestAnimationFrame(step);
+  }
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); running = !running; if (running) requestAnimationFrame(step); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); speed = Math.min(10, speed + 1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); speed = Math.max(1, speed - 1); }
+    else if (e.key === '+' || e.key === '=') { size = Math.min(60, size + 2); }
+    else if (e.key === '-') { size = Math.max(18, size - 2); }
+    else if (e.key === 'r' || e.key === 'R') { window.scrollTo(0, 0); }
+    speedEl.textContent = speed;
+    document.documentElement.style.setProperty('--size', size + 'px');
+  });
+</script>
+</body>
+</html>
