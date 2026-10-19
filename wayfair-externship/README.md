@@ -113,6 +113,27 @@ The same job done three ways: an analyst researching by hand, the workflow built
 | **Content plan** | A marketer writes it from the report | AI drafts it from both reports | Same, with unsupported stats, banned phrases and copied lines flagged |
 | **Adding a category** | Start the research from scratch | Copy and edit the workflow | Add one row to `category_config` (Outdoor Rug took one row) |
 
+### ⏱ Time per task
+
+| Task | Analyst by hand *(estimate)* | Externship workflow *(measured)* | With Rug Intel *(measured)* |
+|---|---|---|---|
+| Trend report (listings, social, blogs) | 4–6 hours | ~10 min | ~10 min *(same agent)* |
+| Competitor benchmark (3 retailers, 30 listings) | 3–5 hours | 5–7 min, started in n8n | 5–7 min, **started from Slack** |
+| Content plan | 3–4 hours | ~1.5 min, after uploading both reports | ~1.5 min, **numbers checked** |
+| Follow-up question | 30–60 min | 5–7 min (rerun the workflow) | **seconds** (`/rug-intel ask`) |
+| Weekly "what changed?" | 3–5 hours (redo the research) | 5–7 min per category, rerun by hand | **0 min hands-on** (Monday digest runs itself) |
+| Updating the dashboard | 1–2 hours | a few minutes (upload two reports) | **0 min** (live, updates after every run) |
+| Checking every number | part of the analyst's time | not done | **automatic** on every report |
+| Adding a new category | days of new research | about an hour (copy and edit the workflow) | **minutes** (one config row) |
+| **One weekly cycle** | **~1.5–2 working days** | **~20–30 min of runs, plus manual file handoffs** | **~20 min of agent time, a few minutes hands-on** |
+
+> **⏱ About 1.5–2 days of manual research becomes roughly 20 minutes of agent time, and every number arrives already checked.**
+
+*How these were measured:*
+- The externship and Rug Intel times come from logged runs: competitor runs took 4.7–4.8 minutes, the content plan 1.4 minutes, Ask and the digest about 6 seconds each, and a trend report about 10 minutes.
+- The analyst times are my estimates for doing the same scope by hand: reading and comparing about 30 listings plus social posts and blogs, then writing it up.
+- The "about an hour" for adding a category to the externship workflow is also an estimate.
+
 **Why this matters for a team:**
 - **Answers come to the team.** People ask in Slack, where they already work, and the whole channel sees the same checked answer.
 - **Nobody acts on an invented number.** The trust verdict shows what to double-check before an AI number reaches a pricing deck or a buying decision. In testing it caught an average price that was $15 off and a made-up "80%" claim.
