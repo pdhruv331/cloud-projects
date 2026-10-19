@@ -8,6 +8,17 @@ On top of the five externship phases I built **Rug Intel**, an extension that ma
 - a weekly change digest
 - a live dashboard
 
+## The problem
+
+**The business problem.** Rug styles rise and fade quickly, and Amazon and Walmart change prices and assortment every week. Wayfair's Rugs team needs to spot those shifts **before trends reach the homepage**, early enough to adjust pricing, plan assortment and stock, and brief marketing. Today that means an analyst manually browsing competitor sites and social media, copying listings into spreadsheets and writing a report. That's slow, it only covers what one person has time to check, and it's out of date by the time it's shared.
+
+**The problem with just adding AI.** The externship's goal was to automate this research with AI agents, and they do produce a full report in minutes. But a fast report creates new problems at work:
+- **AI can invent numbers.** A report can look finished and confident while containing a price or a percentage that doesn't exist in the data, and nothing flags it.
+- **Failures are silent.** A run can report "success" with a whole section missing.
+- **The output is hard to use.** Reports live as files inside a workflow tool most of the team never opens, and they go stale until someone reruns them by hand.
+
+**The goal.** Give the team early, evidence-based market signals they can **trust** and **act on**, delivered where they already work, and kept current without anyone remembering to rerun anything. The five externship agents solve the speed problem. Rug Intel solves the trust and usability problems.
+
 ## What it does
 
 ### The externship build (Phases 1–5)
