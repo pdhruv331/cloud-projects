@@ -129,6 +129,26 @@ The same job done three ways: an analyst researching by hand, the workflow built
 
 > **⏱ About 1.5–2 days of manual research becomes roughly 20 minutes of agent time, and every number arrives already checked.**
 
+#### Time saved
+
+| Metric | Analyst by hand | With Rug Intel | Saved |
+|---|---|---|---|
+| One weekly cycle (elapsed) | 11–17 hours | ~20 min of agent time | **~97–98%** |
+| One weekly cycle (hands-on) | 11–17 hours | a few minutes | **>99%** |
+| Competitor benchmark | 3–5 hours | 5–7 min | **~96–98%** |
+| Follow-up question | 30–60 min | seconds | **>99%** |
+| **Per category, per year** *(48 working weeks)* | **~530–820 hours** | **a few hours of hands-on time** | **~13–20 working weeks freed** |
+
+*The analyst cycle is the sum of the trend, competitor, content and dashboard estimates above (11–17 hours). Percentages compare that range with the measured Rug Intel times.*
+
+#### Why saving analyst time matters to the business
+
+- **Analysts move from collecting data to making decisions.** The hours that went into copying listings and writing reports go to the work only people can do: deciding what to stock, negotiating with suppliers, setting prices and planning promotions.
+- **Faster reaction to the market.** Done by hand, a full refresh is a multi-day job, so it happens monthly at best. Done in about 20 minutes, it can run every week, or on demand when a competitor moves. Spotting a trend or a price drop weeks earlier is the difference between planning stock ahead of demand and reacting to a stockout or a markdown.
+- **More coverage with the same team.** One analyst can realistically keep up with one category by hand. With research automated and a new category added as one config row, the same team can watch every rug category (area, outdoor, runners, shag) and others such as mattresses.
+- **Consistency.** Every category gets the same depth of research and the same evidence check every week, instead of depending on who had time.
+- **Lower cost per insight.** The runs use free-tier models today; even on paid production models, a run costs cents to a few dollars, compared with hours of skilled analyst time.
+
 *How these were measured:*
 - The externship and Rug Intel times come from logged runs: competitor runs took 4.7–4.8 minutes, the content plan 1.4 minutes, Ask and the digest about 6 seconds each, and a trend report about 10 minutes.
 - The analyst times are my estimates for doing the same scope by hand: reading and comparing about 30 listings plus social posts and blogs, then writing it up.
